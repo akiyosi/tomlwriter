@@ -18,12 +18,12 @@ func WriteValue(v interface{}, b []byte, t interface{}, k interface{}, o interfa
   var inMultilineLiteral bool
   var inMultilineArray bool
   var isLineEndingBackSlash bool
-  var key, value, multilinevalue, parsedvalue string
+  var isMultilineEnd bool
+  var key, value, multilinevaluebuffer, multilinevalue, parsedvalue string
 
   lines := strings.Split(string(b), "\n")
   
   for i := 0; i < len(lines); i++ {
-    fmt.Println("------------ ", multilinevalue)
 	line := lines[i]
 	
     // Comment
@@ -90,12 +90,9 @@ func WriteValue(v interface{}, b []byte, t interface{}, k interface{}, o interfa
         value = value[3:]
 	  }
       if strings.Contains(value[len(value)-3:], `"""`) && inMultilineString {
-	    inMultiline = false
 	    inMultilineString = false
+	    isMultilineEnd = true
         value = value[:len(value)-3]
-
-        parsedvalue = multilinevalue + value
-        multilinevalue = ""
 	  }
 
       // multi line literal
@@ -105,12 +102,9 @@ func WriteValue(v interface{}, b []byte, t interface{}, k interface{}, o interfa
         value = value[3:]
 	  }
       if strings.Contains(value[len(value)-3:], `'''`) && inMultilineLiteral {
-	    inMultiline = false
 	    inMultilineLiteral = false
+	    isMultilineEnd = true
         value = value[:len(value)-3]
-
-        parsedvalue = multilinevalue + value
-        multilinevalue = ""
 	  }
     }
 
@@ -120,21 +114,19 @@ func WriteValue(v interface{}, b []byte, t interface{}, k interface{}, o interfa
 	  inMultilineArray = true
 	}
 	if !strings.Contains(value, `[`) && strings.Contains(value, `]`) && inMultilineArray {
-	  inMultiline = false
 	  inMultilineArray = false
-
-      parsedvalue = multilinevalue + value
-      multilinevalue = ""
+	  isMultilineEnd = true
 	}
 
     if !inMultiline {
       parsedvalue = value
     } else {
+	  multilinevaluebuffer += value + "\n"
 
       // When the last non-whitespace character on a line is a \, it will be 
       // trimmed along with all whitespace (including newlines) up to the next
       // non-whitespace character or closing delimiter. 
-      if isLineEndingBackSlash {
+      if isLineEndingBackSlash || inMultilineArray {
           for j, c := range value {
               if unicode.IsSpace(c) {
                   continue
@@ -146,27 +138,45 @@ func WriteValue(v interface{}, b []byte, t interface{}, k interface{}, o interfa
           }
           if isLineEndingBackSlash { value = "" }
       }
-      if value[len(value)-1] == '\\' {
-          isLineEndingBackSlash = true
-      }
-      fmt.Println(value)
+	  if len(value) > 0 {
+        if value[len(value)-1] == '\\' {
+            isLineEndingBackSlash = true
+        }
+	  }
       multilinevalue += value
+	  
+	  // if value is array
+	  if inMultilineArray { multilinevalue += "\x20" }
+
+	  // input multilinevalue to parsedvalue
+	  if isMultilineEnd {
+        parsedvalue = multilinevalue
+	  }
     }
 
-    if matchTable && k == key && o == parsedvalue {
-        fmt.Println(key, v, cline, " !match")
-    } else {
+	// write
+	if isMultilineEnd {
+	  switch matchTable && k == key && o == parsedvalue {
+	  case true:
+        fmt.Println(key, "=", v, cline)
+	  case false:
+        fmt.Print(key, "=", multilinevaluebuffer)
+	  }
+	    inMultiline = false
+        multilinevalue = ""
+        multilinevaluebuffer = ""
+	} else if !inMultiline {
         fmt.Print(vline, cline, "\n")
-    }
+	}
 
   }
 }
 
 // test
 func main() {
-  // file := "/Users/akiyoshi/go/src/github.com/BurntSushi/toml/_examples/example.toml"
+  file := "/Users/akiyoshi/go/src/github.com/BurntSushi/toml/_examples/example.toml"
   input, _ := ioutil.ReadFile(file)
 
-  WriteValue("hoge", input, "database", "ports", "[ 8001, 8001, 8002 ]") 
+  WriteValue("hoge", input, "clients", "hosts", `[ "alpha", "omega" ]`) 
 
 }

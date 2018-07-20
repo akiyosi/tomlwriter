@@ -1,182 +1,273 @@
-//package tomlwriter
-package main
+package tomlwriter
 
 import (
-  "fmt"
-  "io/ioutil"
-  "strings"
-  "unicode"
+	"fmt"
+	"io/ioutil"
+	"strings"
+	"unicode"
+	"unsafe"
 )
 
-// WriteValue takes new value v, bytes b, table t, key k(, old value o),
-//  replace old value o with new value v 
-func WriteValue(v interface{}, b []byte, t interface{}, k interface{}, o interface{}) {
-//func WriteValue(b []byte) {
-  var matchTable bool
-  var inMultiline bool
-  var inMultilineString bool
-  var inMultilineLiteral bool
-  var inMultilineArray bool
-  var isLineEndingBackSlash bool
-  var isMultilineEnd bool
-  var key, value, multilinevaluebuffer, multilinevalue, parsedvalue string
-
-  lines := strings.Split(string(b), "\n")
-  
-  for i := 0; i < len(lines); i++ {
-	line := lines[i]
-	
-    // Comment
-    // A hash symbol marks the rest of the line as a comment.
-	var vline, cline string
-	if strings.Contains(line, "#") {
-	  vline = line[:strings.Index(line, "#")]
-	  cline = "#" + line[strings.Index(line, "#")+1:]
-	} else {
-	  vline = line
-      cline = ""
-	}
-
-	// if Table t is nil
-	if t == "" {
-	} else {
-
-	  // Inline Table
-	  // Inline tables are enclosed in curly braces { and }
-	  if strings.Contains(vline, "{") && strings.Contains(vline, "}") && !strings.Contains(vline, "="){
-		table := strings.Replace(strings.Split(string(vline), "=")[0], " ", "", -1)
-		if t != table {
-          matchTable = false
-		} else { matchTable = true }
-	  }
-
-      // Array of Tables
-	  if strings.Contains(vline, "[[") && strings.Contains(vline, "]]") && !strings.Contains(vline, "="){
-		table := strings.Replace(strings.Split(string(strings.Split(string(vline), "]]")[0]), "[[")[1], " ", "", -1)
-		if t != table {
-          matchTable = false
-		} else {
-		  matchTable = true
-		}
-	  }
-
-	  // Table
-	  // They appear in square brackets on a line by themselves.
-	  if strings.Contains(vline, "[") && strings.Contains(vline, "]") && !strings.Contains(vline, "="){
-		table := strings.Replace(strings.Split(string(strings.Split(string(vline), "]")[0]), "[")[1], " ", "", -1)
-		if t != table {
-          matchTable = false
-		} else { matchTable = true }
-	  }
-
-	}
-
-	// if !strings.Contains(line, "=")
-    if strings.Contains(line, "=") {
-      key = strings.Replace(strings.Split(string(vline), "=")[0], " ", "", -1)
-	  value = strings.Split(string(vline), "=")[1]
-      if unicode.IsSpace([]rune(value)[0]) {
-          value = value[1:]
-      }
-    } else {
-	  value = vline
-    }
-
-    if len(value) > 2 {
-      // multi line string
-      if strings.Contains(value[:3], `"""`) && !inMultilineString {
-	    inMultiline = true
-	    inMultilineString = true
-        value = value[3:]
-	  }
-      if strings.Contains(value[len(value)-3:], `"""`) && inMultilineString {
-	    inMultilineString = false
-	    isMultilineEnd = true
-        value = value[:len(value)-3]
-	  }
-
-      // multi line literal
-      if strings.Contains(value[:3], `'''`) && !inMultilineLiteral {
-	    inMultiline = true
-	    inMultilineLiteral = true
-        value = value[3:]
-	  }
-      if strings.Contains(value[len(value)-3:], `'''`) && inMultilineLiteral {
-	    inMultilineLiteral = false
-	    isMultilineEnd = true
-        value = value[:len(value)-3]
-	  }
-    }
-
-    // multi line array
-	if strings.Contains(value, `[`) && !strings.Contains(value, `]`) && !inMultilineArray {
-	  inMultiline = true
-	  inMultilineArray = true
-	}
-	if !strings.Contains(value, `[`) && strings.Contains(value, `]`) && inMultilineArray {
-	  inMultilineArray = false
-	  isMultilineEnd = true
-	}
-
-    if !inMultiline {
-      parsedvalue = value
-    } else {
-	  multilinevaluebuffer += value + "\n"
-
-      // When the last non-whitespace character on a line is a \, it will be 
-      // trimmed along with all whitespace (including newlines) up to the next
-      // non-whitespace character or closing delimiter. 
-      if isLineEndingBackSlash || inMultilineArray {
-          for j, c := range value {
-              if unicode.IsSpace(c) {
-                  continue
-              } else {
-                  value = value[j:]
-                  isLineEndingBackSlash = false
-                  break
-              }
-          }
-          if isLineEndingBackSlash { value = "" }
-      }
-	  if len(value) > 0 {
-        if value[len(value)-1] == '\\' {
-            isLineEndingBackSlash = true
-        }
-	  }
-      multilinevalue += value
-	  
-	  // if value is array
-	  if inMultilineArray { multilinevalue += "\x20" }
-
-	  // input multilinevalue to parsedvalue
-	  if isMultilineEnd {
-        parsedvalue = multilinevalue
-	  }
-    }
-
-	// write
-	if isMultilineEnd {
-	  switch matchTable && k == key && o == parsedvalue {
-	  case true:
-        fmt.Println(key, "=", v, cline)
-	  case false:
-        fmt.Print(key, "=", multilinevaluebuffer)
-	  }
-	    inMultiline = false
-        multilinevalue = ""
-        multilinevaluebuffer = ""
-	} else if !inMultiline {
-        fmt.Print(vline, cline, "\n")
-	}
-
-  }
+func replaceLinebreak(str, code string) string {
+	return strings.NewReplacer("\r\n", code, "\r", code, "\n", code).Replace(str)
 }
 
-// test
-func main() {
-  file := "/Users/akiyoshi/go/src/github.com/BurntSushi/toml/_examples/example.toml"
-  input, _ := ioutil.ReadFile(file)
+// WriteValue takes new value, file path, table name, key name, old value,
+// replace old value with new value.
+func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname interface{}, oldvalue interface{}) []byte {
+	v := fmt.Sprintf("%v", newvalue)
+	t := fmt.Sprintf("%v", table)
+	k := fmt.Sprintf("%v", keyname)
+	o := fmt.Sprintf("%v", oldvalue)
 
-  WriteValue("hoge", input, "clients", "hosts", `[ "alpha", "omega" ]`) 
+	var matchTable bool
+	var inMultiline bool
+	var inMultilineString bool
+	var inMultilineLiteral bool
+	var inMultilineArray bool
+	var isLineEndingBackSlash bool
+	var isMultilineEnd bool
+	var isglobalkey bool
+	isglobalkey = true
+	var key, value, multilinevaluebuffer, multilinevalue, parsedvalue string
+	var writestring string
+	var writebytes []byte
 
+	// convert line break to "\n" and split with "\n"
+	lines := strings.Split(replaceLinebreak(string(b), "\n"), "\n")
+
+	for i := 0; i < len(lines); i++ {
+		line := lines[i]
+
+		// Toml Comment
+		// A hash symbol marks the rest of the line as a comment.
+		var vline, cline string
+		if strings.Contains(line, "#") {
+			s := strings.Index(line, "#")
+			vline = line[:s]
+			cline = line[s:]
+		} else {
+			vline = line
+			cline = ""
+		}
+
+		// if Toml Table t is nil
+		if t == "" {
+		} else {
+
+			// Toml Inline Table
+			// Inline tables are enclosed in curly braces { and }
+			if strings.Contains(vline, "{") && strings.Contains(vline, "}") && !strings.Contains(vline, "=") {
+				table := strings.Replace(strings.Split(string(vline), "=")[0], "\x20", "", -1)
+				if t != table {
+					matchTable = false
+				} else {
+					matchTable = true
+				}
+				isglobalkey = false
+			}
+
+			// Toml Array of Tables
+			if strings.Contains(vline, "[[") && strings.Contains(vline, "]]") && !strings.Contains(vline, "=") {
+				table := strings.Replace(strings.Split(string(strings.Split(string(vline), "]]")[0]), "[[")[1], "\x20", "", -1)
+				if t != table {
+					matchTable = false
+				} else {
+					matchTable = true
+				}
+				isglobalkey = false
+			}
+
+			// Toml Table
+			// They appear in square brackets on a line by themselves.
+			if strings.Contains(vline, "[") && strings.Contains(vline, "]") && !strings.Contains(vline, "=") {
+				table := strings.Replace(strings.Split(string(strings.Split(string(vline), "]")[0]), "[")[1], "\x20", "", -1)
+				if t != table {
+					matchTable = false
+				} else {
+					matchTable = true
+				}
+				isglobalkey = false
+			}
+		}
+
+		// if !strings.Contains(line, "=")
+		if strings.Contains(line, "=") {
+			// key = strings.Replace(strings.Split(string(vline), "=")[0], "\x20", "", -1)
+			key = strings.TrimRight(strings.Split(string(vline), "=")[0], "\x20")
+			value = strings.Split(string(vline), "=")[1]
+			if unicode.IsSpace([]rune(value)[0]) {
+				value = value[1:]
+			}
+		} else {
+			value = vline
+		}
+
+		// Toml multi line string
+		if len(value) > 2 && strings.Contains(value, `"""`) {
+			switch inMultilineString {
+			case true:
+				if value == `"""` {
+					value = ""
+				} else {
+					value = value[:len(value)-3]
+				}
+				inMultilineString = false
+				isMultilineEnd = true
+			case false:
+				if value == `"""` {
+					value = ""
+				} else {
+					value = value[3:]
+				}
+				inMultiline = true
+				inMultilineString = true
+			}
+		}
+
+		// Toml multi line literal
+		if len(value) > 2 && strings.Contains(value, `'''`) {
+			// Toml multi line string
+			switch inMultilineLiteral {
+			case true:
+				if value == `'''` {
+					value = ""
+				} else {
+					value = value[:len(value)-3]
+				}
+				inMultilineLiteral = false
+				isMultilineEnd = true
+			case false:
+				if value == `'''` {
+					value = ""
+				} else {
+					value = value[3:]
+				}
+				inMultiline = true
+				inMultilineLiteral = true
+			}
+		}
+
+		// Toml multi line array
+		if strings.Contains(value, `[`) && !strings.Contains(value, `]`) && !inMultilineArray {
+			inMultiline = true
+			inMultilineArray = true
+		}
+		if !strings.Contains(value, `[`) && strings.Contains(value, `]`) && inMultilineArray {
+			inMultilineArray = false
+			isMultilineEnd = true
+		}
+
+		if !inMultiline {
+			parsedvalue = value
+		} else {
+
+			if strings.Contains(string(vline), "=") && strings.Contains(string(vline), `"""`) {
+				multilinevaluebuffer += `"""` + value + "\n"
+			} else if !strings.Contains(string(vline), "=") && strings.Contains(string(vline), `"""`) && !inMultilineString {
+				multilinevaluebuffer += value + `"""`
+			} else if strings.Contains(string(vline), "=") && strings.Contains(string(vline), `'''`) {
+				multilinevaluebuffer += `'''` + value + "\n"
+			} else if !strings.Contains(string(vline), "=") && strings.Contains(string(vline), `'''`) && !inMultilineLiteral {
+				multilinevaluebuffer += value + `'''`
+			} else {
+				multilinevaluebuffer += value + "\n"
+			}
+
+			// When the last non-whitespace character on a line is a \, it will be
+			// trimmed along with all whitespace (including newlines) up to the next
+			// non-whitespace character or closing delimiter.
+			if isLineEndingBackSlash || inMultilineArray {
+				for j, c := range value {
+					if unicode.IsSpace(c) {
+						continue
+					} else {
+						value = value[j:]
+						isLineEndingBackSlash = false
+						break
+					}
+				}
+				if isLineEndingBackSlash {
+					value = ""
+				}
+			}
+			if len(value) > 0 {
+				if value[len(value)-1] == '\\' {
+					isLineEndingBackSlash = true
+					if value != "\\" {
+						value = value[:len(value)-1]
+					} else if value == "\\" {
+						value = ""
+					}
+				}
+			}
+			multilinevalue += value
+
+			// if value is array
+			if inMultilineArray {
+				multilinevalue += "\x20"
+			}
+
+			// input multilinevalue to parsedvalue
+			if isMultilineEnd {
+				parsedvalue = multilinevalue
+			}
+		}
+
+		if !inMultiline {
+			value = strings.TrimRight(value, "\x20")
+		}
+
+		// Write modified toml data to file
+		if isMultilineEnd {
+			switch k == strings.Trim(key, ` "`) && o == parsedvalue {
+			case true:
+				if isglobalkey == true {
+					//fmt.Print(key, "\x20=\x20", v, "\x20", cline, "\n")
+					writestring = key + "\x20=\x20" + v + "\x20" + cline
+				} else if !isglobalkey && matchTable {
+					// fmt.Print(key, "\x20=\x20", v, "\x20", cline, "\n")
+					writestring = key + "\x20=\x20" + v + "\x20" + cline
+				}
+			case false:
+				// fmt.Print(key, "\x20=\x20", multilinevaluebuffer, "\n")
+				writestring = key + "\x20=\x20" + multilinevaluebuffer
+			}
+			isMultilineEnd = false
+			inMultiline = false
+			multilinevalue = ""
+			multilinevaluebuffer = ""
+			if i+1 < len(lines) {
+				writestring += "\n"
+			}
+		} else if !inMultiline {
+			switch k == strings.Trim(key, ` "`) && o == value {
+			case true:
+				if isglobalkey == true {
+					// fmt.Print(key, "\x20=\x20", v, "\x20", cline, "\n")
+					writestring = key + "\x20=\x20" + v + "\x20" + cline
+				} else if !isglobalkey && matchTable {
+					// fmt.Print(key, "\x20=\x20", v, "\x20", cline, "\n")
+					writestring = key + "\x20=\x20" + v + "\x20" + cline
+				}
+				if i+1 < len(lines) {
+					writestring += "\n"
+				}
+			case false:
+				// fmt.Print(vline, cline, "\n")
+				writestring = vline + cline
+				if i+1 < len(lines) {
+					writestring += "\n"
+				}
+			}
+		}
+
+		if writestring != "" {
+			writebytes = append(writebytes, *(*[]byte)(unsafe.Pointer(&writestring))...)
+		}
+		writestring = ""
+
+	}
+
+	return writebytes
 }

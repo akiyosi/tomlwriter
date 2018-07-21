@@ -2,7 +2,6 @@ package tomlwriter
 
 import (
 	"fmt"
-	"io/ioutil"
 	"strings"
 	"unicode"
 	"unsafe"
@@ -12,15 +11,46 @@ func replaceLinebreak(str, code string) string {
 	return strings.NewReplacer("\r\n", code, "\r", code, "\n", code).Replace(str)
 }
 
+func countAndReplaceSpaceRight(str string) (int, string) {
+	var count int
+	for z := 0; z < len(str); z++ {
+		if str[len(str)-z-1] == '\n' {
+			count++
+		} else {
+			break
+		}
+	}
+	newstr := strings.TrimRight(str, "\n")
+
+	return count, newstr
+}
+
 // WriteValue takes new value, file path, table name, key name, old value,
-// replace old value with new value.
-func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname interface{}, oldvalue interface{}) []byte {
+// return bytes replaced old value with new value, and it's line number
+func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname interface{}, oldvalue interface{}) ([]byte, int) {
+
+	if newvalue == nil || newvalue == "" {
+		return b, 0
+	}
+	if table == nil {
+		table = ""
+	}
+	if keyname == nil || keyname == "" {
+		return b, 0
+	}
+	if oldvalue == nil {
+		oldvalue = ""
+	}
+
 	v := fmt.Sprintf("%v", newvalue)
 	t := fmt.Sprintf("%v", table)
 	k := fmt.Sprintf("%v", keyname)
 	o := fmt.Sprintf("%v", oldvalue)
 
 	var matchTable bool
+	var matchArrayTable bool
+	var matchKeyInArrayTable bool
+	var doneWriteNewValue bool
 	var inMultiline bool
 	var inMultilineString bool
 	var inMultilineLiteral bool
@@ -28,10 +58,13 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 	var isLineEndingBackSlash bool
 	var isMultilineEnd bool
 	var isglobalkey bool
+	var isInlineTableMatch bool
 	isglobalkey = true
 	var key, value, multilinevaluebuffer, multilinevalue, parsedvalue string
 	var writestring string
+
 	var writebytes []byte
+	var writeLinenumber int
 
 	// convert line break to "\n" and split with "\n"
 	lines := strings.Split(replaceLinebreak(string(b), "\n"), "\n")
@@ -51,45 +84,110 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 			cline = ""
 		}
 
-		// if Toml Table t is nil
-		if t == "" {
-		} else {
+		// Write new entry
+		if !inMultiline {
+			if (strings.Contains(vline, "[") && strings.Contains(vline, "]") && !strings.Contains(vline, "=")) || i == len(lines)-1 {
 
-			// Toml Inline Table
-			// Inline tables are enclosed in curly braces { and }
-			if strings.Contains(vline, "{") && strings.Contains(vline, "}") && !strings.Contains(vline, "=") {
-				table := strings.Replace(strings.Split(string(vline), "=")[0], "\x20", "", -1)
-				if t != table {
-					matchTable = false
-				} else {
-					matchTable = true
+				// if old value is nil and writeLinenumber == 0, matchTable is true, then,
+				// key and new value write in the previous table as new entry
+				if writeLinenumber == 0 && doneWriteNewValue == false {
+					if (t != "" && o == "" && matchTable == true) || (t == "" && o == "" && isglobalkey == true) {
+						co, trimedRightString := countAndReplaceSpaceRight(string(writebytes))
+						writebytes = *(*[]byte)(unsafe.Pointer(&trimedRightString))
+						if matchArrayTable == true && matchKeyInArrayTable {
+							writestring += "\n[" + t + "]"
+						}
+						writestring += "\n" + k + "\x20=\x20" + v
+						for a := 0; a < co; a++ {
+							writestring += "\n"
+						}
+						doneWriteNewValue = true
+					}
 				}
-				isglobalkey = false
-			}
-
-			// Toml Array of Tables
-			if strings.Contains(vline, "[[") && strings.Contains(vline, "]]") && !strings.Contains(vline, "=") {
-				table := strings.Replace(strings.Split(string(strings.Split(string(vline), "]]")[0]), "[[")[1], "\x20", "", -1)
-				if t != table {
-					matchTable = false
-				} else {
-					matchTable = true
-				}
-				isglobalkey = false
-			}
-
-			// Toml Table
-			// They appear in square brackets on a line by themselves.
-			if strings.Contains(vline, "[") && strings.Contains(vline, "]") && !strings.Contains(vline, "=") {
-				table := strings.Replace(strings.Split(string(strings.Split(string(vline), "]")[0]), "[")[1], "\x20", "", -1)
-				if t != table {
-					matchTable = false
-				} else {
-					matchTable = true
-				}
-				isglobalkey = false
 			}
 		}
+
+		// Toml Inline Table
+		// Inline tables are enclosed in curly braces { and }
+		if strings.Contains(vline, "{") && strings.Contains(vline, "}") && strings.Contains(vline, "=") && !inMultiline {
+			if strings.Contains(v, "\n") {
+				return b, 0
+			}
+
+			table := strings.Replace(strings.Split(string(vline), "=")[0], "\x20", "", 1)
+			if t != "" && t == table {
+				inlinetable := strings.Trim(strings.SplitAfterN(string(vline), "=", 2)[0], "\x20")
+				inlinetablevalue := strings.Trim(strings.SplitAfterN(string(vline), "=", 2)[1], " {}")
+				inlines := strings.Split(inlinetablevalue, ",")
+				inlinestring := inlinetable + "\x20" + "{ "
+				for a, inline := range inlines {
+					key = strings.Split(string(inline), "=")[0]
+					value = strings.Split(string(inline), "=")[1]
+
+					// Not support array of inline table
+					if !strings.Contains(value, "[") && strings.Contains(inlinetablevalue, "[") {
+						return b, 0
+					}
+
+					switch strings.Trim(k, `"`) == strings.Trim(key, ` "`) && o == strings.Trim(value, "\x20") {
+					case true:
+						isInlineTableMatch = true
+						inlinestring += key + "=\x20" + v
+						writeLinenumber = i + 1
+					case false:
+						inlinestring += inline
+					}
+					if a < len(inlines)-1 {
+						inlinestring += ","
+					}
+
+				}
+				inlinestring += " }"
+
+				if isInlineTableMatch == false {
+					writestring = vline + cline
+					if i+1 < len(lines) {
+						writestring += "\n"
+					}
+				} else {
+					writestring = inlinestring
+				}
+				if cline != "" {
+					writestring += "\x20" + cline
+				}
+				if i+1 < len(lines) {
+					writestring += "\n"
+				}
+				isInlineTableMatch = false
+
+				writebytes = append(writebytes, *(*[]byte)(unsafe.Pointer(&writestring))...)
+				writestring = ""
+
+				continue
+			}
+		}
+
+		// Toml Table | Array Table
+		// They appear in square brackets on a line by themselves.
+		if strings.Contains(vline, "[") && strings.Contains(vline, "]") && !strings.Contains(vline, "=") && !inMultiline {
+			table := strings.Replace(strings.Replace(strings.Replace(string(vline), "[", "", 1), "]", "", 1), "\x20", "", -1)
+			if strings.Contains(vline, "[[") && strings.Contains(vline, "]]") {
+				matchKeyInArrayTable = false
+				matchArrayTable = true
+			} else {
+				matchArrayTable = false
+			}
+			if t != "" && t != table {
+				matchTable = false
+			} else {
+				matchTable = true
+			}
+			isglobalkey = false
+		}
+
+		// if t == "" && !isglobalkey && o == "" {
+		//   return b, 0
+		// }
 
 		// if !strings.Contains(line, "=")
 		if strings.Contains(line, "=") {
@@ -171,7 +269,14 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 			} else if !strings.Contains(string(vline), "=") && strings.Contains(string(vline), `'''`) && !inMultilineLiteral {
 				multilinevaluebuffer += value + `'''`
 			} else {
-				multilinevaluebuffer += value + "\n"
+				if inMultilineArray {
+					multilinevaluebuffer += value + cline
+				} else {
+					multilinevaluebuffer += value
+				}
+				if !isMultilineEnd {
+					multilinevaluebuffer += "\n"
+				}
 			}
 
 			// When the last non-whitespace character on a line is a \, it will be
@@ -217,21 +322,34 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 		if !inMultiline {
 			value = strings.TrimRight(value, "\x20")
 		}
+		if matchTable && strings.Trim(k, `"`) == strings.Trim(key, ` "`) {
+			matchKeyInArrayTable = true
+		}
 
-		// Write modified toml data to file
+		// Write modified toml data
 		if isMultilineEnd {
-			switch k == strings.Trim(key, ` "`) && o == parsedvalue {
+			switch strings.Trim(k, `"`) == strings.Trim(key, ` "`) && o == parsedvalue && o != "" {
 			case true:
-				if isglobalkey == true {
+				if isglobalkey == true && t == "" {
 					//fmt.Print(key, "\x20=\x20", v, "\x20", cline, "\n")
-					writestring = key + "\x20=\x20" + v + "\x20" + cline
+					writestring += key + "\x20=\x20" + v
+					if cline != "" {
+						writestring += "\x20" + cline
+					}
+					writeLinenumber = i + 1
 				} else if !isglobalkey && matchTable {
 					// fmt.Print(key, "\x20=\x20", v, "\x20", cline, "\n")
-					writestring = key + "\x20=\x20" + v + "\x20" + cline
+					writestring += key + "\x20=\x20" + v
+					if cline != "" {
+						writestring += "\x20" + cline
+					}
+					writeLinenumber = i + 1
+				} else {
+					writestring += key + "\x20=\x20" + multilinevaluebuffer
 				}
 			case false:
 				// fmt.Print(key, "\x20=\x20", multilinevaluebuffer, "\n")
-				writestring = key + "\x20=\x20" + multilinevaluebuffer
+				writestring += key + "\x20=\x20" + multilinevaluebuffer
 			}
 			isMultilineEnd = false
 			inMultiline = false
@@ -241,21 +359,31 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 				writestring += "\n"
 			}
 		} else if !inMultiline {
-			switch k == strings.Trim(key, ` "`) && o == value {
+			switch strings.Trim(k, `"`) == strings.Trim(key, ` "`) && o == value && o != "" {
 			case true:
-				if isglobalkey == true {
+				if isglobalkey == true && t == "" {
 					// fmt.Print(key, "\x20=\x20", v, "\x20", cline, "\n")
-					writestring = key + "\x20=\x20" + v + "\x20" + cline
+					writestring += key + "\x20=\x20" + v
+					if cline != "" {
+						writestring += "\x20" + cline
+					}
+					writeLinenumber = i + 1
 				} else if !isglobalkey && matchTable {
 					// fmt.Print(key, "\x20=\x20", v, "\x20", cline, "\n")
-					writestring = key + "\x20=\x20" + v + "\x20" + cline
+					writestring += key + "\x20=\x20" + v
+					if cline != "" {
+						writestring += "\x20" + cline
+					}
+					writeLinenumber = i + 1
+				} else {
+					writestring += vline + cline
 				}
 				if i+1 < len(lines) {
 					writestring += "\n"
 				}
 			case false:
 				// fmt.Print(vline, cline, "\n")
-				writestring = vline + cline
+				writestring += vline + cline
 				if i+1 < len(lines) {
 					writestring += "\n"
 				}
@@ -269,5 +397,5 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 
 	}
 
-	return writebytes
+	return writebytes, writeLinenumber
 }

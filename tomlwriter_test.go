@@ -41,7 +41,7 @@ func newTestData() []*test {
 			args{`"fizz"`, // Value to write
 				[]byte( // Input Bytes
 
-					`# This is a TOML document.
+`# This is a TOML document.
 
 title = "TOML Example"
 
@@ -51,10 +51,10 @@ dob = 1979-05-27T07:32:00-08:00 # First class dates`),
 
 				nil,               // Table
 				"title",           // Key
-				`"TOML Example"`}, // Old value
+				"TOML Example"}, // Old value
 			[]byte( // Expected Bytes
 
-				`# This is a TOML document.
+`# This is a TOML document.
 
 title = "fizz"
 
@@ -68,7 +68,7 @@ dob = 1979-05-27T07:32:00-08:00 # First class dates`),
 			args{`"fizz"`, // Value to write
 				[]byte( // Input Bytes
 
-					`# This is a TOML document.
+`# This is a TOML document.
 
 title = "TOML Example"
 
@@ -78,10 +78,10 @@ dob = 1979-05-27T07:32:00-08:00 # First class dates`),
 
 				"nil",             // Table
 				"title",           // Key
-				`"TOML Example"`}, // Old value
+				"TOML Example"}, // Old value
 			[]byte( // Expected Bytes
 
-				`# This is a TOML document.
+`# This is a TOML document.
 
 title = "TOML Example"
 
@@ -95,7 +95,7 @@ dob = 1979-05-27T07:32:00-08:00 # First class dates`),
 			args{`"fizz"`, // Value to write
 				[]byte( // Input Bytes
 
-					`# This is a TOML document.
+`# This is a TOML document.
 
 title = "TOML Example"
 
@@ -111,10 +111,10 @@ dob = 1979-05-27T07:32:00-08:00 # First class dates`),
 
 				"owner",                 // Table
 				"name",                  // Key
-				`"Tom Preston-Werner"`}, // Old value
+				"Tom Preston-Werner"}, // Old value
 			[]byte( // Expected Bytes
 
-				`# This is a TOML document.
+`# This is a TOML document.
 
 title = "TOML Example"
 
@@ -134,20 +134,21 @@ dob = 1979-05-27T07:32:00-08:00 # First class dates`),
 			args{"false", // Value to write
 				[]byte( // Input Bytes
 
-					`name = "Orange"
+`name = "Orange"
 physical.color = "orange"
 physical.shape = "round"
 site."google.com" = true`),
 
 				nil,                 // Table
 				`site."google.com"`, // Key
-				"true"},             // Old value
+				true},             // Old value
 			[]byte( // Expected Bytes
 
-				`name = "Orange"
+`name = "Orange"
 physical.color = "orange"
 physical.shape = "round"
 site."google.com" = false`),
+
 		}, // -----------------------------------------------------
 
 		//// Toml Muliline string
@@ -155,7 +156,7 @@ site."google.com" = false`),
 			args{`"""` + "\n       fizz\\\n       buzz" + `"""`, // Value to write
 				[]byte( // Input Bytes
 
-					`str1 = "The quick brown fox jumps over the lazy dog."
+`str1 = "The quick brown fox jumps over the lazy dog."
 
 str2 = """
 The quick brown \
@@ -172,10 +173,10 @@ str3 = """\
 
 				nil,    // Table
 				"str2", // Key
-				`The quick brown fox jumps over the lazy dog.`}, // Old value
+				"The quick brown fox jumps over the lazy dog."}, // Old value
 			[]byte( // Expected Bytes
 
-				`str1 = "The quick brown fox jumps over the lazy dog."
+`str1 = "The quick brown fox jumps over the lazy dog."
 
 str2 = """
        fizz\
@@ -186,14 +187,56 @@ str3 = """\
        fox jumps over \
        the lazy dog.\
        """`),
+
 		}, // -----------------------------------------------------
+
+		//// Toml Muliline string
+		{"Test Muliline literal: ",
+			args{`'''` + "\n       fizz\\\n       buzz" + `'''`, // Value to write
+				[]byte( // Input Bytes
+
+`str1 = "The quick brown fox jumps over the lazy dog."
+
+str2 = """
+The quick brown \
+
+
+  fox jumps over \
+    the lazy dog."""
+
+str3 = """\
+       The quick brown \
+       fox jumps over \
+       the lazy dog.\
+       """`),
+
+				nil,    // Table
+				"str3", // Key
+				"The quick brown fox jumps over the lazy dog."}, // Old value
+			[]byte( // Expected Bytes
+
+`str1 = "The quick brown fox jumps over the lazy dog."
+
+str2 = """
+The quick brown \
+
+
+  fox jumps over \
+    the lazy dog."""
+
+str3 = '''
+       fizz\
+       buzz'''`),
+
+		}, // -----------------------------------------------------
+
 
 		//// Toml Literal string
 		{"Toml Literal string: ",
 			args{`'<\s*\t*\d\+>'`, // Value to write
 				[]byte( // Input Bytes
 
-					`# What you see is what you get.
+`# What you see is what you get.
 winpath  = 'C:\Users\nodejs\templates'
 winpath2 = '\\ServerX\admin$\system32\'
 quoted   = 'Tom "Dubs" Preston-Werner'
@@ -201,14 +244,15 @@ regex    = '<\i\c*\s*>'`),
 
 				nil,             // Table
 				"regex",         // Key
-				`'<\i\c*\s*>'`}, // Old value
+				`<\i\c*\s*>`}, // Old value
 			[]byte( // Expected Bytes
 
-				`# What you see is what you get.
+`# What you see is what you get.
 winpath  = 'C:\Users\nodejs\templates'
 winpath2 = '\\ServerX\admin$\system32\'
 quoted   = 'Tom "Dubs" Preston-Werner'
 regex = '<\s*\t*\d\+>'`),
+
 		}, // -----------------------------------------------------
 
 		//// Toml Integer
@@ -216,7 +260,7 @@ regex = '<\s*\t*\d\+>'`),
 			args{1024, // Value to write
 				[]byte( // Input Bytes
 
-					`int1 = +99
+`int1 = +99
 int2 = 42
 int3 = 0
 int4 = -17
@@ -229,7 +273,7 @@ int7 = 1_2_3_4_5     # VALID but discouraged`),
 				`1_2_3_4_5`}, // Old value
 			[]byte( // Expected Bytes
 
-				`int1 = +99
+`int1 = +99
 int2 = 42
 int3 = 0
 int4 = -17
@@ -243,7 +287,7 @@ int7 = 1024 # VALID but discouraged`),
 			args{8e+99, // Value to write
 				[]byte( // Input Bytes
 
-					`# exponent
+`# exponent
 flt4 = 5e+22
 flt5 = 1e6
 flt6 = -2E-2`),
@@ -253,10 +297,11 @@ flt6 = -2E-2`),
 				"1e6"}, // Old value
 			[]byte( // Expected Bytes
 
-				`# exponent
+`# exponent
 flt4 = 5e+22
 flt5 = 8e+99
 flt6 = -2E-2`),
+
 		}, // -----------------------------------------------------
 
 		//// Toml Array
@@ -264,7 +309,7 @@ flt6 = -2E-2`),
 			args{"[ 99.2, 23.4 ]", // Value to write
 				[]byte( // Input Bytes
 
-					`arr5 = [ [ 1, 2 ], ["a", "b", "c"] ]
+`arr5 = [ [ 1, 2 ], ["a", "b", "c"] ]
 arr7 = [
   1, 2, 3
 ]
@@ -278,12 +323,13 @@ arr8 = [
 				"[ 1, 2, 3 ]"}, // Old value
 			[]byte( // Expected Bytes
 
-				`arr5 = [ [ 1, 2 ], ["a", "b", "c"] ]
+`arr5 = [ [ 1, 2 ], ["a", "b", "c"] ]
 arr7 = [ 99.2, 23.4 ]
 arr8 = [
   1,
   2, # this is ok
 ]`),
+
 		}, // -----------------------------------------------------
 
 		//// Toml Table
@@ -291,16 +337,17 @@ arr8 = [
 			args{`"fizz"`, // Value to write
 				[]byte( // Input Bytes
 
-					`[dog."tater.man"]
+`[dog."tater.man"]
 type.name = "pug"`),
 
 				nil,         // Table
 				"type.name", // Key
-				`"pug"`},    // Old value
+				"pug"},    // Old value
 			[]byte( // Expected Bytes
 
-				`[dog."tater.man"]
+`[dog."tater.man"]
 type.name = "fizz"`),
+
 		}, // -----------------------------------------------------
 
 		//// Toml Inline Table
@@ -308,20 +355,21 @@ type.name = "fizz"`),
 			args{`"fizz"`, // Value to write
 				[]byte( // Input Bytes
 
-					`key = value
+`key = value
 name = { first = "Tom", last = "Preston-Werner" }
 point = { x = 1, y = 2 }
 animal = { type.name = "pug" }`),
 
 				"name",   // Table
 				"first",  // Key
-				`"Tom"`}, // Old value
+				"Tom"}, // Old value
 			[]byte( // Expected Bytes
 
-				`key = value
+`key = value
 name = { first = "fizz", last = "Preston-Werner" }
 point = { x = 1, y = 2 }
 animal = { type.name = "pug" }`),
+
 		}, // -----------------------------------------------------
 
 		//// Toml Array Table
@@ -329,7 +377,7 @@ animal = { type.name = "pug" }`),
 			args{`"fizz"`, // Value to write
 				[]byte( // Input Bytes
 
-					`[[products]]
+`[[products]]
 name = "Hammer"
 sku = 738594937
 
@@ -342,10 +390,10 @@ color = "gray"`),
 
 				"[products]", // Table
 				"name",       // Key
-				`"Nail"`},    // Old value
+				"Nail"},    // Old value
 			[]byte( // Expected Bytes
 
-				`[[products]]
+`[[products]]
 name = "Hammer"
 sku = 738594937
 
@@ -355,6 +403,7 @@ sku = 738594937
 name = "fizz"
 sku = 284758393
 color = "gray"`),
+
 		}, // -----------------------------------------------------
 
 		//// Toml write new Key-Value
@@ -362,7 +411,7 @@ color = "gray"`),
 			args{`"fizz"`, // Value to write
 				[]byte( // Input Bytes
 
-					`key = value
+`key = value
 
 name = { first = "Tom", last = "Preston-Werner" }
 [animal]
@@ -373,12 +422,13 @@ type.name = "pug"`),
 				""},      // Old value
 			[]byte( // Expected Bytes
 
-				`key = value
+`key = value
 
 name = { first = "Tom", last = "Preston-Werner" }
 newKey = "fizz"
 [animal]
 type.name = "pug"`),
+
 		}, // -----------------------------------------------------
 
 		//// Toml write new Key-Value
@@ -386,7 +436,7 @@ type.name = "pug"`),
 			args{`"fizz"`, // Value to write
 				[]byte( // Input Bytes
 
-					`key = value
+`key = value
 
 name = { first = "Tom", last = "Preston-Werner" }
 
@@ -399,7 +449,7 @@ type.name = "pug"`),
 				""},      // Old value
 			[]byte( // Expected Bytes
 
-				`key = value
+`key = value
 
 name = { first = "Tom", last = "Preston-Werner" }
 newKey = "fizz"
@@ -407,6 +457,7 @@ newKey = "fizz"
 
 [animal]
 type.name = "pug"`),
+
 		}, // -----------------------------------------------------
 
 		//// Toml write new Key-Value in Table
@@ -414,7 +465,7 @@ type.name = "pug"`),
 			args{`"fizz"`, // Value to write
 				[]byte( // Input Bytes
 
-					`name = { first = "Tom", last = "Preston-Werner" }
+`name = { first = "Tom", last = "Preston-Werner" }
 [animal]
 type.name = "pug"
 
@@ -427,7 +478,7 @@ type.name = "Sparrows"
 				""},      // Old value
 			[]byte( // Expected Bytes
 
-				`name = { first = "Tom", last = "Preston-Werner" }
+`name = { first = "Tom", last = "Preston-Werner" }
 [animal]
 type.name = "pug"
 
@@ -442,7 +493,7 @@ newKey = "fizz"
 			args{`"fizz"`, // Value to write
 				[]byte( // Input Bytes
 
-					`name = { first = "Tom", last = "Preston-Werner" }
+`name = { first = "Tom", last = "Preston-Werner" }
 [animal]
 type.name = "pug"
 
@@ -459,7 +510,7 @@ type.name = "Ducks"
 				""},         // Old value
 			[]byte( // Expected Bytes
 
-				`name = { first = "Tom", last = "Preston-Werner" }
+`name = { first = "Tom", last = "Preston-Werner" }
 [animal]
 type.name = "pug"
 
@@ -479,7 +530,7 @@ type.name = "Ducks"
 			args{`"""` + "\n  fizz\n  fizz\n" + `"""`, // Value to write
 				[]byte( // Input Bytes
 
-					`[[birds]]
+`[[birds]]
 type.name = """
   Songbirds
   Songbirds
@@ -495,7 +546,7 @@ type.name = """
 				""},         // Old value
 			[]byte( // Expected Bytes
 
-				`[[birds]]
+`[[birds]]
 type.name = """
   Songbirds
   Songbirds

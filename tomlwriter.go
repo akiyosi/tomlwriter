@@ -25,6 +25,93 @@ func countAndReplaceSpaceRight(str string) (int, string) {
 	return count, newstr
 }
 
+func valueToString(value interface{}) string {
+  switch value.(type) {
+	case bool :
+	  if value == true {
+		return "true"
+	  } else if value == false {
+		return "false"
+	  }
+	case string :
+	  if value == "" {
+		return ""
+	  } else {
+	    return fmt.Sprintf(`"%v"`, value)
+	  }
+
+	default :
+	  return fmt.Sprintf("%v", value)
+  }
+  return fmt.Sprintf("%v", value)
+}
+
+func isTomlInt(s string) bool {
+    for _, c := range s {
+        if unicode.IsDigit(c) || c == '+' || c == '-' || c == '_' {
+		    continue
+        } else {
+            return false
+		}
+    }
+    return true
+}
+
+
+func isTomlFloat(s string) bool {
+  var dotCount int
+  var eCount int
+    for _, c := range s {
+        if unicode.IsDigit(c) || (c == '.' && (dotCount == 0)) || (((c == 'e') || (c == 'E')) && eCount == 0 ) || c == '+' || c == '-' {
+		  if (c == 'e') || (c == 'E') {
+			eCount++
+		  }
+		  if c == 'e' {
+			dotCount++
+		  }
+		  continue
+
+        } else {
+          return false
+		}
+    }
+    return true
+}
+
+func isTomlArray(s string) bool {
+	if s[0] != '[' && s[len(s)-1] != ']' {
+	  return false
+	}
+	var brac int
+	var kets int
+
+    for _, c := range s {
+        if c == '[' {
+		    brac++
+		    continue
+        } 
+		if c == ']' {
+		    kets++
+		    continue
+		}
+    }
+	if brac != kets {
+	  return false
+	}
+
+    return true
+}
+
+// v0.4.0 compare
+func compareTomlValue(l, r string) bool {
+  if isTomlInt(r) == true {
+
+  }
+  
+
+}
+
+
 // WriteValue takes new value, file path, table name, key name, old value,
 // return bytes replaced old value with new value, and it's line number
 func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname interface{}, oldvalue interface{}) ([]byte, int) {
@@ -45,7 +132,8 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 	v := fmt.Sprintf("%v", newvalue)
 	t := fmt.Sprintf("%v", table)
 	k := fmt.Sprintf("%v", keyname)
-	o := fmt.Sprintf("%v", oldvalue)
+	// o := fmt.Sprintf("%v", oldvalue)
+	o := valueToString(oldvalue)
 
 	var matchTable bool
 	var matchArrayTable bool
@@ -220,6 +308,7 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 				}
 				inMultiline = true
 				inMultilineString = true
+				multilinevalue = `"`
 			}
 		}
 
@@ -243,6 +332,7 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 				}
 				inMultiline = true
 				inMultilineLiteral = true
+				multilinevalue = `'`
 			}
 		}
 
@@ -315,7 +405,13 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 
 			// input multilinevalue to parsedvalue
 			if isMultilineEnd {
+			  if !strings.Contains(string(vline), "=") && strings.Contains(string(vline), `"""`) {
+				parsedvalue = multilinevalue + `"`
+			  } else if !strings.Contains(string(vline), "=") && strings.Contains(string(vline), `'''`) {
+				parsedvalue = multilinevalue + `'`
+			  } else {
 				parsedvalue = multilinevalue
+			  }
 			}
 		}
 
@@ -353,7 +449,7 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 			}
 			isMultilineEnd = false
 			inMultiline = false
-			multilinevalue = ""
+			multilinevalue = `"`
 			multilinevaluebuffer = ""
 			if i+1 < len(lines) {
 				writestring += "\n"

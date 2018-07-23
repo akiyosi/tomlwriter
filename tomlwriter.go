@@ -25,19 +25,28 @@ func countAndReplaceSpaceRight(str string) (int, string) {
 	return count, newstr
 }
 
-func valueToString(value interface{}) string {
+func valueToTomlType(s string) interface{} {
   switch value.(type) {
 	case bool :
-	  if value == true {
-		return "true"
-	  } else if value == false {
-		return "false"
+	  if s == "true" {
+		return true
+	  } else if s == "false" {
+		return false
 	  }
 	case string :
-	  if value == "" {
+	  if s == "" {
 		return ""
-	  } else {
-	    return fmt.Sprintf(`"%v"`, value)
+	  } else if isTomlFloat(s) {
+        num, _ := strconv.ParseFloat(s, 32)
+	    return num
+      } else if isTomlInt(s) {
+        num, _ := strconv.ParseInt(s, 10)
+	    return num
+      } else if isTomlArray(s) == true, _ {
+          _, l := isTomlArray(s)
+
+      }
+
 	  }
 
 	default :
@@ -45,6 +54,17 @@ func valueToString(value interface{}) string {
   }
   return fmt.Sprintf("%v", value)
 }
+
+func stringToArray(s string) []interface{} {
+    s = strings.Replace(s, "\x20", "", -1)
+    for _, c := range s {
+        switch c {
+        case '[' :
+
+        }
+    }
+}
+
 
 func isTomlInt(s string) bool {
     for _, c := range s {
@@ -78,7 +98,7 @@ func isTomlFloat(s string) bool {
     return true
 }
 
-func isTomlArray(s string) bool {
+func isTomlArray(s string) bool, int {
 	if s[0] != '[' && s[len(s)-1] != ']' {
 	  return false
 	}
@@ -96,10 +116,10 @@ func isTomlArray(s string) bool {
 		}
     }
 	if brac != kets {
-	  return false
+	  return false, 0
 	}
 
-    return true
+    return true, brac
 }
 
 // v0.4.0 compare
@@ -133,7 +153,8 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 	t := fmt.Sprintf("%v", table)
 	k := fmt.Sprintf("%v", keyname)
 	// o := fmt.Sprintf("%v", oldvalue)
-	o := valueToString(oldvalue)
+	// o := valueToString(oldvalue)
+	o := oldvalue
 
 	var matchTable bool
 	var matchArrayTable bool

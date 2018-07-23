@@ -270,7 +270,7 @@ int7 = 1_2_3_4_5     # VALID but discouraged`),
 
 				nil,          // Table
 				"int7",       // Key
-				`1_2_3_4_5`}, // Old value
+				12345 }, // Old value
 			[]byte( // Expected Bytes
 
 `int1 = +99
@@ -294,7 +294,7 @@ flt6 = -2E-2`),
 
 				nil,    // Table
 				"flt5", // Key
-				"1e6"}, // Old value
+				1e6 }, // Old value
 			[]byte( // Expected Bytes
 
 `# exponent
@@ -320,7 +320,7 @@ arr8 = [
 
 				nil,            // Table
 				"arr7",         // Key
-				"[ 1, 2, 3 ]"}, // Old value
+				[]int{1,2,3} }, // Old value
 			[]byte( // Expected Bytes
 
 `arr5 = [ [ 1, 2 ], ["a", "b", "c"] ]

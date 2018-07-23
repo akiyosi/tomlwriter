@@ -133,9 +133,6 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 	v := fmt.Sprintf("%v", newvalue)
 	t := fmt.Sprintf("%v", table)
 	k := fmt.Sprintf("%v", keyname)
-	//o := fmt.Sprintf("%v", oldvalue)
-	// o := valueToString(oldvalue)
-	// o := oldvalue
 
 	var o string
 	switch oldvalue.(type) {
@@ -156,6 +153,7 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 		}
 	}
 
+	var countMultiline int
 	var matchTable bool
 	var matchArrayTable bool
 	var matchKeyInArrayTable bool
@@ -207,6 +205,7 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 							writestring += "\n[" + t + "]"
 						}
 						writestring += "\n" + k + "\x20=\x20" + v
+						writeLinenumber = i + 1 - co + 1
 						for a := 0; a < co; a++ {
 							writestring += "\n"
 						}
@@ -243,7 +242,6 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 					case true:
 						isInlineTableMatch = true
 						inlinestring += key + "=\x20" + v
-						writeLinenumber = i + 1
 					case false:
 						inlinestring += inline
 					}
@@ -261,12 +259,13 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 					}
 				} else {
 					writestring = inlinestring
-				}
-				if cline != "" {
-					writestring += "\x20" + cline
-				}
-				if i+1 < len(lines) {
-					writestring += "\n"
+					writeLinenumber = i + 1
+					if cline != "" {
+						writestring += "\x20" + cline
+					}
+					if i+1 < len(lines) {
+						writestring += "\n"
+					}
 				}
 				isInlineTableMatch = false
 
@@ -328,6 +327,7 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 				} else {
 					value = value[3:]
 				}
+				countMultiline = 0
 				inMultiline = true
 				inMultilineString = true
 				multilinevalue = `"`
@@ -352,6 +352,7 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 				} else {
 					value = value[3:]
 				}
+				countMultiline = 0
 				inMultiline = true
 				inMultilineLiteral = true
 				multilinevalue = `'`
@@ -360,6 +361,7 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 
 		// Toml multi line array
 		if strings.Contains(value, `[`) && !strings.Contains(value, `]`) && !inMultilineArray {
+			countMultiline = 0
 			inMultiline = true
 			inMultilineArray = true
 		}
@@ -371,6 +373,7 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 		if !inMultiline {
 			parsedvalue = value
 		} else {
+			countMultiline++
 
 			if strings.Contains(string(vline), "=") && strings.Contains(string(vline), `"""`) {
 				multilinevaluebuffer += `"""` + value + "\n"
@@ -459,14 +462,14 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 					if cline != "" {
 						writestring += "\x20" + cline
 					}
-					writeLinenumber = i + 1
+					writeLinenumber = i + 1 - countMultiline + 1
 				} else if !isglobalkey && matchTable {
 					// fmt.Print(key, "\x20=\x20", v, "\x20", cline, "\n")
 					writestring += key + "\x20=\x20" + v
 					if cline != "" {
 						writestring += "\x20" + cline
 					}
-					writeLinenumber = i + 1
+					writeLinenumber = i + 1 - countMultiline + 1
 				} else {
 					writestring += key + "\x20=\x20" + multilinevaluebuffer
 				}

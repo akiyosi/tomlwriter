@@ -16,16 +16,172 @@ type args struct {
 type test struct {
 	name string
 	args args
-	want []byte
+	want1 []byte
+	want2 int
 }
+
+
+func Test_replaceLinebreak(t *testing.T) {
+	type args struct {
+		str  string
+		code string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := replaceLinebreak(tt.args.str, tt.args.code); got != tt.want {
+				t.Errorf("replaceLinebreak() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_countAndReplaceSpaceRight(t *testing.T) {
+	type args struct {
+		str string
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want  int
+		want1 string
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1 := countAndReplaceSpaceRight(tt.args.str)
+			if got != tt.want {
+				t.Errorf("countAndReplaceSpaceRight() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("countAndReplaceSpaceRight() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
+
+func Test_stringToTomlType(t *testing.T) {
+	type args struct {
+		s string
+	}
+	tests := []struct {
+		name string
+		args args
+		want interface{}
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := stringToTomlType(tt.args.s); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("stringToTomlType() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_isTomlInt(t *testing.T) {
+	type args struct {
+		s string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isTomlInt(tt.args.s); got != tt.want {
+				t.Errorf("isTomlInt() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_isTomlFloat(t *testing.T) {
+	type args struct {
+		s string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isTomlFloat(tt.args.s); got != tt.want {
+				t.Errorf("isTomlFloat() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_isTomlArray(t *testing.T) {
+	type args struct {
+		s string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isTomlArray(tt.args.s); got != tt.want {
+				t.Errorf("isTomlArray() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_compareTomlValue(t *testing.T) {
+	type args struct {
+		l string
+		r string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := compareTomlValue(tt.args.l, tt.args.r); got != tt.want {
+				t.Errorf("compareTomlValue() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+
 
 func TestWriteValue(t *testing.T) {
 	tests := newTestData()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got, _ := WriteValue(tt.args.newvalue, tt.args.b, tt.args.table, tt.args.keyname, tt.args.oldvalue); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("\nWriteValue() ---------------------- : \n%v\n\nWant ------------------------------ : \n%v", string(got), string(tt.want))
+			got1, got2 := WriteValue(tt.args.newvalue, tt.args.b, tt.args.table, tt.args.keyname, tt.args.oldvalue)
+			//got, got1 := WriteValue(tt.args.newvalue, tt.args.b, tt.args.table, tt.args.keyname, tt.args.oldvalue)
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("\nWriteValue() ---------------------- : \n%v\n\nWant ------------------------------ : \n%v",string(got1), string(tt.want1))
 				// t.Errorf("\nWriteValue() : \n%v\nWant : \n%v", got, tt.want)
+			}
+			if got2 != tt.want2 {
+				t.Errorf("\nWriteValue() got2 = %v, want2 %v", got2, tt.want2)
 			}
 		})
 	}
@@ -60,7 +216,7 @@ title = "fizz"
 
 [owner]
 name = "Tom Preston-Werner"
-dob = 1979-05-27T07:32:00-08:00 # First class dates`),
+dob = 1979-05-27T07:32:00-08:00 # First class dates`), 3,
 		}, // -----------------------------------------------------
 
 		//// Toml global Key/Value Pair | XXX FAIL XXX
@@ -87,7 +243,7 @@ title = "TOML Example"
 
 [owner]
 name = "Tom Preston-Werner"
-dob = 1979-05-27T07:32:00-08:00 # First class dates`),
+dob = 1979-05-27T07:32:00-08:00 # First class dates`), 0,
 		}, // -----------------------------------------------------
 
 		//// Toml Key/Value Pair in Table
@@ -126,7 +282,7 @@ title = "TOML Example"
 
 [owner]
 name = "fizz"
-dob = 1979-05-27T07:32:00-08:00 # First class dates`),
+dob = 1979-05-27T07:32:00-08:00 # First class dates`), 12,
 		}, // -----------------------------------------------------
 
 		//// Toml Dotted keys
@@ -147,12 +303,12 @@ site."google.com" = true`),
 `name = "Orange"
 physical.color = "orange"
 physical.shape = "round"
-site."google.com" = false`),
+site."google.com" = false`), 4,
 
 		}, // -----------------------------------------------------
 
 		//// Toml Muliline string
-		{"Test Muliline string: ",
+		{"Test Multiline string: ",
 			args{`"""` + "\n       fizz\\\n       buzz" + `"""`, // Value to write
 				[]byte( // Input Bytes
 
@@ -186,7 +342,7 @@ str3 = """\
        The quick brown \
        fox jumps over \
        the lazy dog.\
-       """`),
+       """`), 3,
 
 		}, // -----------------------------------------------------
 
@@ -226,7 +382,7 @@ The quick brown \
 
 str3 = '''
        fizz\
-       buzz'''`),
+       buzz'''`), 10,
 
 		}, // -----------------------------------------------------
 
@@ -251,7 +407,7 @@ regex    = '<\i\c*\s*>'`),
 winpath  = 'C:\Users\nodejs\templates'
 winpath2 = '\\ServerX\admin$\system32\'
 quoted   = 'Tom "Dubs" Preston-Werner'
-regex = '<\s*\t*\d\+>'`),
+regex = '<\s*\t*\d\+>'`), 5,
 
 		}, // -----------------------------------------------------
 
@@ -279,7 +435,7 @@ int3 = 0
 int4 = -17
 int5 = 1_000
 int6 = 5_349_221
-int7 = 1024 # VALID but discouraged`),
+int7 = 1024 # VALID but discouraged`), 7,
 		}, // -----------------------------------------------------
 
 		//// Toml Float
@@ -300,7 +456,7 @@ flt6 = -2E-2`),
 `# exponent
 flt4 = 5e+22
 flt5 = 8e+99
-flt6 = -2E-2`),
+flt6 = -2E-2`), 3,
 
 		}, // -----------------------------------------------------
 
@@ -328,7 +484,7 @@ arr7 = [ 99.2, 23.4 ]
 arr8 = [
   1,
   2, # this is ok
-]`),
+]`), 2,
 
 		}, // -----------------------------------------------------
 
@@ -346,7 +502,7 @@ type.name = "pug"`),
 			[]byte( // Expected Bytes
 
 `[dog."tater.man"]
-type.name = "fizz"`),
+type.name = "fizz"`), 2,
 
 		}, // -----------------------------------------------------
 
@@ -368,7 +524,7 @@ animal = { type.name = "pug" }`),
 `key = value
 name = { first = "fizz", last = "Preston-Werner" }
 point = { x = 1, y = 2 }
-animal = { type.name = "pug" }`),
+animal = { type.name = "pug" }`), 2,
 
 		}, // -----------------------------------------------------
 
@@ -402,7 +558,7 @@ sku = 738594937
 [[products]]
 name = "fizz"
 sku = 284758393
-color = "gray"`),
+color = "gray"`), 8,
 
 		}, // -----------------------------------------------------
 
@@ -427,7 +583,7 @@ type.name = "pug"`),
 name = { first = "Tom", last = "Preston-Werner" }
 newKey = "fizz"
 [animal]
-type.name = "pug"`),
+type.name = "pug"`), 4,
 
 		}, // -----------------------------------------------------
 
@@ -456,7 +612,7 @@ newKey = "fizz"
 
 
 [animal]
-type.name = "pug"`),
+type.name = "pug"`), 4,
 
 		}, // -----------------------------------------------------
 
@@ -485,7 +641,7 @@ type.name = "pug"
 [bird]
 type.name = "Sparrows"
 newKey = "fizz"
-`),
+`), 7,
 		}, // -----------------------------------------------------
 
 		//// Toml write new Key-Value in Array Table
@@ -522,7 +678,7 @@ type.name = "fizz"
 type.name = "Songbirds"
 [[birds]]
 type.name = "Ducks"
-`),
+`), 7,
 		}, // -----------------------------------------------------
 
 		//// Toml write new Key-MultilineValue in Array Table
@@ -560,7 +716,7 @@ type.name = """
 type.name = """
   Ducks
   Ducks
-"""`),
+"""`), 6,
 		}, // -----------------------------------------------------
 
 		// **** End

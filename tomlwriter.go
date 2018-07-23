@@ -2,6 +2,7 @@ package tomlwriter
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"unicode"
 	"unsafe"
@@ -25,112 +26,92 @@ func countAndReplaceSpaceRight(str string) (int, string) {
 	return count, newstr
 }
 
-func valueToTomlType(s string) interface{} {
-  switch value.(type) {
-	case bool :
-	  if s == "true" {
-		return true
-	  } else if s == "false" {
-		return false
-	  }
-	case string :
-	  if s == "" {
-		return ""
-	  } else if isTomlFloat(s) {
-        num, _ := strconv.ParseFloat(s, 32)
-	    return num
-      } else if isTomlInt(s) {
-        num, _ := strconv.ParseInt(s, 10)
-	    return num
-      } else if isTomlArray(s) == true, _ {
-          _, l := isTomlArray(s)
+// parse value in toml file
+func stringToTomlType(s string) interface{} {
+	s = strings.Trim(s, " \t")
 
-      }
+	if isTomlFloat(s) {
+		num, _ := strconv.ParseFloat(s, 32)
+		return fmt.Sprintf("%v", num)
+	} else if isTomlInt(s) {
+		num, _ := strconv.ParseInt(strings.Replace(s, "_", "", -1), 10, 32)
+		return fmt.Sprintf("%v", num)
+	} else if isTomlArray(s) {
+		return strings.Replace(strings.Replace(s, "\x20", "", -1), ",", "", -1)
+	}
 
-	  }
+	if len(s) > 1 {
+		if s[0] == '"' && s[len(s)-1] == '"' {
+			return s
+		} else if s[0] == '\'' && s[len(s)-1] == '\'' {
+			return `"` + s[1:len(s)-1] + `"`
+		}
+	}
 
-	default :
-	  return fmt.Sprintf("%v", value)
-  }
-  return fmt.Sprintf("%v", value)
+	return s
 }
-
-func stringToArray(s string) []interface{} {
-    s = strings.Replace(s, "\x20", "", -1)
-    for _, c := range s {
-        switch c {
-        case '[' :
-
-        }
-    }
-}
-
 
 func isTomlInt(s string) bool {
-    for _, c := range s {
-        if unicode.IsDigit(c) || c == '+' || c == '-' || c == '_' {
-		    continue
-        } else {
-            return false
+	for _, c := range s {
+		if unicode.IsDigit(c) || c == '+' || c == '-' || c == '_' {
+			continue
+		} else {
+			return false
 		}
-    }
-    return true
+	}
+	return true
 }
-
 
 func isTomlFloat(s string) bool {
-  var dotCount int
-  var eCount int
-    for _, c := range s {
-        if unicode.IsDigit(c) || (c == '.' && (dotCount == 0)) || (((c == 'e') || (c == 'E')) && eCount == 0 ) || c == '+' || c == '-' {
-		  if (c == 'e') || (c == 'E') {
-			eCount++
-		  }
-		  if c == 'e' {
-			dotCount++
-		  }
-		  continue
+	var dotCount int
+	var eCount int
+	for _, c := range s {
+		if unicode.IsDigit(c) || (c == '.' && (dotCount == 0)) || (((c == 'e') || (c == 'E')) && eCount == 0) || c == '+' || c == '-' {
+			if (c == 'e') || (c == 'E') {
+				eCount++
+			}
+			if c == 'e' {
+				dotCount++
+			}
+			continue
 
-        } else {
-          return false
+		} else {
+			return false
 		}
-    }
-    return true
+	}
+	return true
 }
 
-func isTomlArray(s string) bool, int {
+func isTomlArray(s string) bool {
 	if s[0] != '[' && s[len(s)-1] != ']' {
-	  return false
+		return false
 	}
 	var brac int
 	var kets int
 
-    for _, c := range s {
-        if c == '[' {
-		    brac++
-		    continue
-        } 
-		if c == ']' {
-		    kets++
-		    continue
+	for _, c := range s {
+		if c == '[' {
+			brac++
+			continue
 		}
-    }
+		if c == ']' {
+			kets++
+			continue
+		}
+	}
 	if brac != kets {
-	  return false, 0
+		return false
 	}
 
-    return true, brac
+	return true
 }
 
 // v0.4.0 compare
 func compareTomlValue(l, r string) bool {
-  if isTomlInt(r) == true {
-
-  }
-  
-
+	left := stringToTomlType(l)
+	right := stringToTomlType(r)
+	return left == right
 }
-
 
 // WriteValue takes new value, file path, table name, key name, old value,
 // return bytes replaced old value with new value, and it's line number
@@ -152,9 +133,28 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 	v := fmt.Sprintf("%v", newvalue)
 	t := fmt.Sprintf("%v", table)
 	k := fmt.Sprintf("%v", keyname)
-	// o := fmt.Sprintf("%v", oldvalue)
+	//o := fmt.Sprintf("%v", oldvalue)
 	// o := valueToString(oldvalue)
-	o := oldvalue
+	// o := oldvalue
+
+	var o string
+	switch oldvalue.(type) {
+	case bool, int, float64:
+		o = fmt.Sprintf("%v", oldvalue)
+	case string:
+		if oldvalue == "" {
+			o = ""
+		} else {
+			o = fmt.Sprintf(`"%v"`, oldvalue)
+		}
+	default:
+		n := fmt.Sprintf("%v", oldvalue)
+		if n[0] == '[' && n[len(n)-1] == ']' {
+			o = strings.Replace(fmt.Sprintf("%v", oldvalue), "\x20", ",\x20", -1)
+		} else {
+			o = fmt.Sprintf(`"%v"`, oldvalue)
+		}
+	}
 
 	var matchTable bool
 	var matchArrayTable bool
@@ -238,7 +238,8 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 						return b, 0
 					}
 
-					switch strings.Trim(k, `"`) == strings.Trim(key, ` "`) && o == strings.Trim(value, "\x20") {
+					// switch strings.Trim(k, `"`) == strings.Trim(key, ` "`) && o == strings.Trim(value, "\x20") {
+					switch strings.Trim(k, `"`) == strings.Trim(key, ` "`) && compareTomlValue(o, strings.Trim(value, "\x20")) {
 					case true:
 						isInlineTableMatch = true
 						inlinestring += key + "=\x20" + v
@@ -426,13 +427,13 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 
 			// input multilinevalue to parsedvalue
 			if isMultilineEnd {
-			  if !strings.Contains(string(vline), "=") && strings.Contains(string(vline), `"""`) {
-				parsedvalue = multilinevalue + `"`
-			  } else if !strings.Contains(string(vline), "=") && strings.Contains(string(vline), `'''`) {
-				parsedvalue = multilinevalue + `'`
-			  } else {
-				parsedvalue = multilinevalue
-			  }
+				if !strings.Contains(string(vline), "=") && strings.Contains(string(vline), `"""`) {
+					parsedvalue = multilinevalue + `"`
+				} else if !strings.Contains(string(vline), "=") && strings.Contains(string(vline), `'''`) {
+					parsedvalue = multilinevalue + `'`
+				} else {
+					parsedvalue = multilinevalue
+				}
 			}
 		}
 
@@ -443,9 +444,14 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 			matchKeyInArrayTable = true
 		}
 
+		// writestring += "\n" + "o :::: " + fmt.Sprintf("%v", stringToTomlType(o))
+		// writestring += "\n" + "parsedvalue :::: |" + fmt.Sprintf("%v", stringToTomlType(parsedvalue)) + "|"
+		// writestring += "\n" + fmt.Sprintf("+++ %v", compareTomlValue(o, parsedvalue)) + "\n\n"
+
 		// Write modified toml data
 		if isMultilineEnd {
-			switch strings.Trim(k, `"`) == strings.Trim(key, ` "`) && o == parsedvalue && o != "" {
+			//switch strings.Trim(k, `"`) == strings.Trim(key, ` "`) && o == parsedvalue && o != "" {
+			switch strings.Trim(k, `"`) == strings.Trim(key, ` "`) && compareTomlValue(o, parsedvalue) && o != "" {
 			case true:
 				if isglobalkey == true && t == "" {
 					//fmt.Print(key, "\x20=\x20", v, "\x20", cline, "\n")
@@ -476,7 +482,9 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 				writestring += "\n"
 			}
 		} else if !inMultiline {
-			switch strings.Trim(k, `"`) == strings.Trim(key, ` "`) && o == value && o != "" {
+
+			//switch strings.Trim(k, `"`) == strings.Trim(key, ` "`) && o == value && o != "" {
+			switch strings.Trim(k, `"`) == strings.Trim(key, ` "`) && compareTomlValue(o, parsedvalue) && o != "" {
 			case true:
 				if isglobalkey == true && t == "" {
 					// fmt.Print(key, "\x20=\x20", v, "\x20", cline, "\n")

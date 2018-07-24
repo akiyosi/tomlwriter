@@ -2,16 +2,16 @@
 
 Tomlwriter will help it if you want to change specific values in the toml file while keeping comments, indentations, etc. 
 
-### Installation
+## Installation
 
 ```
 go get github.com/akiyosi/tomlwriter
 ```
 
-### Usage
+## Usage
 See `_example/example.go`. It make changes like the following:
 
-##### Before
+#### Before
 
 ```
 # This is a TOML document. Boom.
@@ -52,7 +52,7 @@ hosts = [
 ```
 
 
-##### After
+#### After
 ```
 # This is a TOML document. Boom.
 

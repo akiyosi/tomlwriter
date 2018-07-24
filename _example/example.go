@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 	"io/ioutil"
-	"strconv"
 
 	"github.com/BurntSushi/toml"
 	"github.com/akiyosi/tomlwriter"
@@ -28,7 +27,7 @@ type ownerInfo struct {
 type database struct {
 	Server  string
 	Ports   []int
-	ConnMax float64 `toml:"connection_max"`
+	ConnMax int `toml:"connection_max"`
 	Enabled bool
 }
 
@@ -54,9 +53,9 @@ func main() {
 	// fmt.Printf("Owner: %s (%s, %s), Born: %s\n",
 	// 	config.Owner.Name, config.Owner.Org, config.Owner.Bio,
 	// 	config.Owner.DOB)
-	fmt.Printf("Database: %s %v (Max conn. %d), Enabled? %v\n",
-		config.DB.Server, config.DB.Ports, config.DB.ConnMax,
-		config.DB.Enabled)
+	// fmt.Printf("Database: %s %v (Max conn. %d), Enabled? %v\n",
+	// 	config.DB.Server, config.DB.Ports, config.DB.ConnMax,
+	// 	config.DB.Enabled)
 	// for serverName, server := range config.Servers {
 	// 	fmt.Printf("Server: %s (%s, %s)\n", serverName, server.IP, server.DC)
 	// }
@@ -64,11 +63,10 @@ func main() {
 	// fmt.Printf("Client hosts: %v\n", config.Clients.Hosts)
 
 	input, _ := ioutil.ReadFile(file)
-	b, _ := tomlwriter.WriteValue("fizz", input, "database", "ports", config.DB.Ports)
-    _ = ioutil.WriteFile(file, b, 0755)
-	var a float64
-	a, _ = strconv.ParseFloat("1e4", 32)
-	fmt.Println(fmt.Sprintf("float test: %e", a))
+    b, _ := tomlwriter.WriteValue("2018-07-24T00:00:00Z", input, "database", "ports", config.Owner.DOB)
+
+    file2 := "./_example/example2.toml"
+    _ = ioutil.WriteFile(file2, b, 0755)
 
 	return
 

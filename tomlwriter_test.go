@@ -3,6 +3,7 @@ package tomlwriter
 import (
 	"reflect"
 	"testing"
+    "time"
 )
 
 type args struct {
@@ -94,6 +95,39 @@ func Test_stringToTomlType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := stringToTomlType(tt.args.s); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("stringToTomlType() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_isTomlDateTime(t *testing.T) {
+	type args struct {
+		s string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		// TODO: Add test cases.
+        {" 1", args{`2017-07-24T15:00:00Z`}, true, },
+        {" 2", args{`2017-07-24T15:00:00-09:00`}, true, },
+        {" 3", args{`2017-07-24T15:00:00.123456-09:00`}, true, },
+        {" 4", args{`2017-07-24 15:00:00Z`}, true, },
+        {" 5", args{`2017-07-24`}, true, },
+        {" 6", args{`15:00:00`}, true, },
+        {" 7", args{`15:00:00.123456-09:00`}, true, },
+        {" 8", args{`2017-07-24T15:00:00X`}, false, },
+        {" 9", args{`XXXX-07-24T15:00:00X`}, false, },
+        {" 10", args{`"2017-07-24T15:00:00Z"`}, false, },
+        {" 11", args{`2017/07/24`}, false, },
+        {" 12", args{`15-00-00`}, false, },
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, _ := isTomlDateTime(tt.args.s)
+            if got != tt.want {
+				t.Errorf("isTomlDateTime() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -493,6 +527,56 @@ flt5 = 8e+99
 flt6 = -2E-2`), 3,
 
 		}, // -----------------------------------------------------
+
+		//// Toml Date
+		{"Toml Date : ",
+			args{"2009-05-27T07:32:00Z", // Value to write
+				[]byte( // Input Bytes
+
+`[owner]
+name = "Tom Preston-Werner"
+organization = "GitHub"
+bio = "GitHub Cofounder & CEO\nLikes tater tots and beer."
+dob = 1979-05-27T07:32:00Z # First class dates? Why not?`),
+
+				"owner",    // Table
+				"dob", // Key
+				time.Date(1979, 5 ,27 ,7 ,32 ,0 , 000000, time.UTC) }, // Old value
+			[]byte( // Expected Bytes
+
+`[owner]
+name = "Tom Preston-Werner"
+organization = "GitHub"
+bio = "GitHub Cofounder & CEO\nLikes tater tots and beer."
+dob = 2009-05-27T07:32:00Z # First class dates? Why not?`), 5,
+
+		}, // -----------------------------------------------------
+
+
+		//// Toml Array
+		{"Toml Array: ",
+			args{`"fizz"`, // Value to write
+				[]byte( // Input Bytes
+
+`[database]
+server = "192.168.1.1"
+ports = [ 8001, 8001, 8002 ]
+connection_max = 1e5
+enabled = true`),
+
+				"database",            // Table
+				"ports",         // Key
+				[]int{8001, 8001, 8002} }, // Old value
+			[]byte( // Expected Bytes
+
+`[database]
+server = "192.168.1.1"
+ports = "fizz"
+connection_max = 1e5
+enabled = true`), 3,
+
+		}, // -----------------------------------------------------
+
 
 		//// Toml Array
 		{"Toml Array: ",

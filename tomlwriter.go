@@ -397,6 +397,10 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 				inMultilineString = false
 				isMultilineEnd = true
 			case false:
+				if strings.Contains(strings.Replace(value, `"""`, "", 1), `"""`) {
+					value = `"` + strings.Trim(value, `"`) + `"`
+					break
+				}
 				if value == `"""` {
 					value = ""
 				} else {
@@ -422,6 +426,10 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 				inMultilineLiteral = false
 				isMultilineEnd = true
 			case false:
+				if strings.Contains(strings.Replace(value, `'''`, "", 1), `'''`) {
+					value = `'` + strings.Trim(value, `'`) + `'`
+					break
+				}
 				if value == `'''` {
 					value = ""
 				} else {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 	"unsafe"
 )
@@ -30,7 +31,9 @@ func countAndReplaceSpaceRight(str string) (int, string) {
 func stringToTomlType(s string) interface{} {
 	s = strings.Trim(s, " \t")
 
-	if isTomlFloat(s) {
+	if dt, t := isTomlDateTime(s); dt == true {
+		return fmt.Sprintf("%v", t)
+	} else if isTomlFloat(s) {
 		num, _ := strconv.ParseFloat(strings.Replace(s, "E", "e", 1), 32)
 		return fmt.Sprintf("%f", num)
 	} else if isTomlInt(s) {
@@ -49,6 +52,57 @@ func stringToTomlType(s string) interface{} {
 	}
 
 	return s
+}
+
+func isTomlDateTime(s string) (bool, string) {
+
+	// Sprintf %v :: "1979-05-27 07:32:00 +0000 UTC"
+	// v0.4.0 toml time layouts
+	layout1 := "2006-01-02T15:04:05Z"
+	layout2 := "2006-01-02T15:04:05-07:00"
+	layout3 := "2006-01-02T15:04:05.999999-07:00"
+	// toml v0.5.0
+	layout4 := "2006-01-02 15:04:05Z"
+	layout5 := "2006-01-02"
+	layout6 := "15:04:05"
+	layout7 := "15:04:05.999999-07:00"
+
+	d1, err1 := time.Parse(layout1, s)
+	if err1 == nil {
+		return true, fmt.Sprintf("%v", d1)
+	}
+
+	d2, err2 := time.Parse(layout2, s)
+	if err2 == nil {
+		return true, fmt.Sprintf("%v", d2)
+	}
+
+	d3, err3 := time.Parse(layout3, s)
+	if err3 == nil {
+		return true, fmt.Sprintf("%v", d3)
+	}
+
+	d4, err4 := time.Parse(layout4, s)
+	if err4 == nil {
+		return true, fmt.Sprintf("%v", d4)
+	}
+
+	d5, err5 := time.Parse(layout5, s)
+	if err5 == nil {
+		return true, fmt.Sprintf("%v", d5)
+	}
+
+	d6, err6 := time.Parse(layout6, s)
+	if err6 == nil {
+		return true, fmt.Sprintf("%v", d6)
+	}
+
+	d7, err7 := time.Parse(layout7, s)
+	if err7 == nil {
+		return true, fmt.Sprintf("%v", d7)
+	}
+
+	return false, ""
 }
 
 func isTomlInt(s string) bool {
@@ -161,8 +215,14 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 		}
 	default:
 		n := fmt.Sprintf("%v", oldvalue)
+		var dt bool
+		if len(n) > 10 {
+			dt, _ = isTomlDateTime(n[:len(n)-10] + "Z")
+		}
 		if n[0] == '[' && n[len(n)-1] == ']' {
 			o = strings.Replace(fmt.Sprintf("%v", oldvalue), "\x20", ",\x20", -1)
+		} else if dt == true {
+			o = n
 		} else {
 			o = fmt.Sprintf(`"%v"`, oldvalue)
 		}
@@ -462,9 +522,10 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 			matchKeyInArrayTable = true
 		}
 
-		// writestring += "\n" + "o :::: " + fmt.Sprintf("%v", stringToTomlType(o))
-		// writestring += "\n" + "parsedvalue :::: |" + fmt.Sprintf("%v", stringToTomlType(parsedvalue)) + "|"
-		// writestring += "\n" + fmt.Sprintf("+++ %v", compareTomlValue(o, parsedvalue)) + "\n\n"
+		// writestring += "\n" + " ::: DEBUG ::: o : " + fmt.Sprintf("%v", o)
+		// writestring += "\n" + " ::: DEBUG ::: parsedvalue : |" + fmt.Sprintf("%v", parsedvalue) + "|"
+		// writestring += "\n" + " ::: DEBUG ::: stringTo o : " + fmt.Sprintf("%v", stringToTomlType(o))
+		// writestring += "\n" + " ::: DEBUG ::: stringTo parsedvalue : |" + fmt.Sprintf("%v", stringToTomlType(parsedvalue)) + "|"
 
 		// Write modified toml data
 		if isMultilineEnd {

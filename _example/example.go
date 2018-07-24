@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"time"
 	"io/ioutil"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/akiyosi/tomlwriter"
@@ -43,31 +43,37 @@ type clients struct {
 
 func main() {
 	var config tomlConfig
-	file := "./_example/example.toml"
+	file := "./example.toml"
 	if _, err := toml.DecodeFile(file, &config); err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	// fmt.Printf("Title: %s\n", config.Title)
-	// fmt.Printf("Owner: %s (%s, %s), Born: %s\n",
-	// 	config.Owner.Name, config.Owner.Org, config.Owner.Bio,
-	// 	config.Owner.DOB)
-	// fmt.Printf("Database: %s %v (Max conn. %d), Enabled? %v\n",
-	// 	config.DB.Server, config.DB.Ports, config.DB.ConnMax,
-	// 	config.DB.Enabled)
-	// for serverName, server := range config.Servers {
-	// 	fmt.Printf("Server: %s (%s, %s)\n", serverName, server.IP, server.DC)
-	// }
-	// fmt.Printf("Client data: %v\n", config.Clients.Data)
-	// fmt.Printf("Client hosts: %v\n", config.Clients.Hosts)
+	b, _ := ioutil.ReadFile(file)
 
-	input, _ := ioutil.ReadFile(file)
-    b, _ := tomlwriter.WriteValue("2018-07-24T00:00:00Z", input, "database", "ports", config.Owner.DOB)
+	// writing value of key in [owner] table:
+	b, _ = tomlwriter.WriteValue(`"""`+"Learn Git and GitHub\n    without any code!"+`"""`, b, "owner", "organization", config.Owner.Org)
 
-    file2 := "./_example/example2.toml"
-    _ = ioutil.WriteFile(file2, b, 0755)
+	// writing value in global key, tile is nil:
+	b, _ = tomlwriter.WriteValue(`"writing string must be enclosed in double quote."`, b, nil, "title", config.Title)
+
+	// wiriting date/time
+	b, _ = tomlwriter.WriteValue("2018-07-24T00:00:00Z", b, "owner", "dob", config.Owner.DOB)
+
+	// writing array
+	b, _ = tomlwriter.WriteValue("[ 1081, 1082, 1083 ]", b, "database", "ports", config.DB.Ports)
+
+	// writing interger
+	b, _ = tomlwriter.WriteValue("9999", b, "database", "connection_max", config.DB.ConnMax)
+
+	var i int
+	for serverName, server := range config.Servers {
+		i++
+		b, _ = tomlwriter.WriteValue(`"192.168.122.`+`i"`, b, "servers."+serverName, "ip", server.IP)
+	}
+
+	file2 := "./example2.toml"
+	_ = ioutil.WriteFile(file2, b, 0755)
 
 	return
-
 }

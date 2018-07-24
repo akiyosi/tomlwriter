@@ -31,11 +31,11 @@ func stringToTomlType(s string) interface{} {
 	s = strings.Trim(s, " \t")
 
 	if isTomlFloat(s) {
-		num, _ := strconv.ParseFloat(s, 32)
-		return fmt.Sprintf("%v", num)
+		num, _ := strconv.ParseFloat(strings.Replace(s, "E", "e", 1), 32)
+		return fmt.Sprintf("%f", num)
 	} else if isTomlInt(s) {
 		num, _ := strconv.ParseInt(strings.Replace(s, "_", "", -1), 10, 32)
-		return fmt.Sprintf("%v", num)
+		return fmt.Sprintf("%f", float64(num))
 	} else if isTomlArray(s) {
 		return strings.Replace(strings.Replace(s, "\x20", "", -1), ",", "", -1)
 	}
@@ -70,7 +70,7 @@ func isTomlFloat(s string) bool {
 			if (c == 'e') || (c == 'E') {
 				eCount++
 			}
-			if c == 'e' {
+			if c == '.' {
 				dotCount++
 			}
 			continue
@@ -86,20 +86,35 @@ func isTomlArray(s string) bool {
 	if s[0] != '[' && s[len(s)-1] != ']' {
 		return false
 	}
-	var brac int
-	var kets int
+	var brac, maxBrac int
+	var kets, maxKets int
 
+	isContinuousBrac := true
 	for _, c := range s {
+		if c != '[' && c != ' ' {
+			isContinuousBrac = false
+			if maxBrac <= brac {
+				maxBrac = brac
+			}
+		}
 		if c == '[' {
-			brac++
+			if isContinuousBrac {
+				brac++
+			}
 			continue
+		}
+
+		if c != ']' && c != ' ' {
+			kets = 0
 		}
 		if c == ']' {
 			kets++
 			continue
 		}
+
 	}
-	if brac != kets {
+	maxKets = kets
+	if maxBrac != maxKets {
 		return false
 	}
 

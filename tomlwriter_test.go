@@ -77,6 +77,18 @@ func Test_stringToTomlType(t *testing.T) {
 		want interface{}
 	}{
 		// TODO: Add test cases.
+		{" 1", args{`"moji"`}, `"moji"`, },
+		{" 2", args{`3e+9`}, "3000000000.000000", },
+		{" 3", args{`+1.23e+2`}, "123.000000", },
+		{" 4", args{`-1.23e-2`}, "-0.012300", },
+		{" 5", args{`1_230`}, "1230.000000", },
+		{" 6", args{`-39`}, "-39.000000", },
+		{" 7", args{`+3_9_8_7_`}, "3987.000000", },
+		{" 8", args{`true`}, "true", },
+		{" 9", args{`false`}, "false", },
+		{" 10", args{`[ 1, 2 ]`}, "[12]", },
+		{" 11", args{`[  [1,2,3],  [4, 5, 6] ]`}, "[[123][456]]", },
+		{" 12", args{`[  [ "hoge","fuga"],  ["fizz","buzz"]]`}, `[["hoge""fuga"]["fizz""buzz"]]`, },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -97,6 +109,15 @@ func Test_isTomlInt(t *testing.T) {
 		want bool
 	}{
 		// TODO: Add test cases.
+		{" 1", args{`+99`}, true, },
+		{" 2", args{`42`}, true, },
+		{" 3", args{`0`}, true, },
+		{" 4", args{`-17`}, true, },
+		{" 5", args{`1_234_5`}, true, },
+		{" 6", args{`0_4`}, true, },
+		{" 7", args{`abc`}, false, },
+		{" 7", args{`1e8`}, false, },
+		{" 7", args{`'hoge'`}, false, },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -117,6 +138,15 @@ func Test_isTomlFloat(t *testing.T) {
 		want bool
 	}{
 		// TODO: Add test cases.
+		{" 1", args{`+1.0`}, true, },
+		{" 2", args{`3.1415`}, true, },
+		{" 3", args{`-0.1`}, true, },
+		{" 4", args{`5e+22`}, true, },
+		{" 5", args{`1e6`}, true, },
+		{" 6", args{`-2E-2`}, true, },
+		{" 7", args{`abc`}, false, },
+		{" 8", args{`123abc`}, false, },
+		{" 9", args{`"123"`}, false, },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -137,6 +167,10 @@ func Test_isTomlArray(t *testing.T) {
 		want bool
 	}{
 		// TODO: Add test cases.
+		{" 1", args{`[  [ "hoge","fuga"],  ["fizz","buzz"]]`}, true, },
+		{" 2", args{`[   "hoge","fuga",  ["fizz","buzz"]]`}, false, },
+		{" 3", args{`[ 1 2 3]`}, true, },
+		{" 3", args{`"[ 1 2 3]"`}, false, },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

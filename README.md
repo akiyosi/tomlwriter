@@ -75,11 +75,11 @@ enabled = true
 
   # You can indent as you please. Tabs or spaces. TOML don't care.
   [servers.alpha]
-  ip = "192.168.122.i"
+  ip = "192.168.122.1"
   dc = "eqdc10"
 
   [servers.beta]
-  ip = "192.168.122.i"
+  ip = "192.168.122.2"
   dc = "eqdc10"
 
 [clients]

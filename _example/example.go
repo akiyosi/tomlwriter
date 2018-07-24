@@ -69,7 +69,8 @@ func main() {
 	var i int
 	for serverName, server := range config.Servers {
 		i++
-		b, _ = tomlwriter.WriteValue(`"192.168.122.`+`i"`, b, "servers."+serverName, "ip", server.IP)
+		ip := `"192.168.122.` + fmt.Sprintf("%v", i) + `"`
+		b, _ = tomlwriter.WriteValue(ip, b, "servers."+serverName, "ip", server.IP)
 	}
 
 	file2 := "./example2.toml"

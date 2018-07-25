@@ -246,7 +246,7 @@ func TestWriteValue(t *testing.T) {
 			//got, got1 := WriteValue(tt.args.newvalue, tt.args.b, tt.args.table, tt.args.keyname, tt.args.oldvalue)
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("\nWriteValue() ---------------------- : \n%v\n\nWant ------------------------------ : \n%v",string(got1), string(tt.want1))
-				// t.Errorf("\nWriteValue() : \n%v\nWant : \n%v", got, tt.want)
+				//t.Errorf("\nWriteValue() ---------------------- : \n%v\n\nWant ------------------------------ : \n%v", got1, tt.want1)
 			}
 			if got2 != tt.want2 {
 				t.Errorf("\nWriteValue() got2 = %v, want2 %v", got2, tt.want2)
@@ -414,43 +414,35 @@ str3 = """\
 
 		}, // -----------------------------------------------------
 
-		//// Toml Muliline string
+		//// Toml Muliline literal
 		{"Test Muliline literal: ",
 			args{`'''` + "\n       fizz\\\n       buzz" + `'''`, // Value to write
 				[]byte( // Input Bytes
 
-`str1 = "The quick brown fox jumps over the lazy dog."
+`str1 = "cat."
 
-str2 = """
-The quick brown \
+str4 = '''
+       The quick brown 
 
-
-  fox jumps over \
-    the lazy dog."""
-
-str3 = """\
-       The quick brown \
-       fox jumps over \
-       the lazy dog.\
-       """`),
+       fox jumps over 
+       the lazy dog.
+       '''`),
 
 				nil,    // Table
-				"str3", // Key
-				"The quick brown fox jumps over the lazy dog."}, // Old value
+				"str4", // Key
+				`
+       The quick brown 
+
+       fox jumps over 
+       the lazy dog.
+       `}, // Old value
 			[]byte( // Expected Bytes
 
-`str1 = "The quick brown fox jumps over the lazy dog."
+`str1 = "cat."
 
-str2 = """
-The quick brown \
-
-
-  fox jumps over \
-    the lazy dog."""
-
-str3 = '''
+str4 = '''
        fizz\
-       buzz'''`), 10,
+       buzz'''`), 3,
 
 		}, // -----------------------------------------------------
 

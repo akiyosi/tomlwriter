@@ -438,7 +438,7 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 				countMultiline = 0
 				inMultiline = true
 				inMultilineLiteral = true
-				multilinevalue = `'`
+				multilinevalue = `"`
 			}
 		}
 
@@ -480,7 +480,7 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 			// When the last non-whitespace character on a line is a \, it will be
 			// trimmed along with all whitespace (including newlines) up to the next
 			// non-whitespace character or closing delimiter.
-			if isLineEndingBackSlash || inMultilineArray {
+			if !inMultilineLiteral && (isLineEndingBackSlash || inMultilineArray) {
 				for j, c := range value {
 					if unicode.IsSpace(c) {
 						continue
@@ -516,10 +516,14 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 				if !strings.Contains(string(vline), "=") && strings.Contains(string(vline), `"""`) {
 					parsedvalue = multilinevalue + `"`
 				} else if !strings.Contains(string(vline), "=") && strings.Contains(string(vline), `'''`) {
-					parsedvalue = multilinevalue + `'`
+					parsedvalue = multilinevalue + `"`
 				} else {
 					parsedvalue = multilinevalue
 				}
+			} else {
+			  if inMultilineLiteral {
+			  	multilinevalue += "\n"
+			  }
 			}
 		}
 
@@ -530,10 +534,12 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 			matchKeyInArrayTable = true
 		}
 
+		// writestring += "\n" + " ::: DEBUG ::::::::::::::::::: start ::::::::::::::::::::"
 		// writestring += "\n" + " ::: DEBUG ::: o : " + fmt.Sprintf("%v", o)
 		// writestring += "\n" + " ::: DEBUG ::: parsedvalue : |" + fmt.Sprintf("%v", parsedvalue) + "|"
 		// writestring += "\n" + " ::: DEBUG ::: stringTo o : " + fmt.Sprintf("%v", stringToTomlType(o))
 		// writestring += "\n" + " ::: DEBUG ::: stringTo parsedvalue : |" + fmt.Sprintf("%v", stringToTomlType(parsedvalue)) + "|"
+		// writestring += "\n" + " ::: DEBUG :::::::::::::::::::: end :::::::::::::::::::::"
 
 		// Write modified toml data
 		if isMultilineEnd {

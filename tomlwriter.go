@@ -186,8 +186,8 @@ func compareTomlValue(l, r string) bool {
 	return left == right
 }
 
-// WriteValue takes new value, file path, table name, key name, old value,
-// return bytes replaced old value with new value, and it's line number
+// WriteValue takes new value, []byte, table name, key name, old value,
+// return []bytes replaced old value with new value, and it's line number
 func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname interface{}, oldvalue interface{}) ([]byte, int) {
 
 	if newvalue == nil || newvalue == "" {

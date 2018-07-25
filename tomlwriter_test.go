@@ -57,12 +57,12 @@ func Test_countAndReplaceSpaceRight(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1 := countAndReplaceSpaceRight(tt.args.str)
+			got, got1 := countAndReplaceNrRight(tt.args.str)
 			if got != tt.want {
-				t.Errorf("countAndReplaceSpaceRight() got = %v, want %v", got, tt.want)
+				t.Errorf("countAndReplaceNrRight() got = %v, want %v", got, tt.want)
 			}
 			if got1 != tt.want1 {
-				t.Errorf("countAndReplaceSpaceRight() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("countAndReplaceNrRight() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
@@ -246,7 +246,7 @@ func TestWriteValue(t *testing.T) {
 			//got, got1 := WriteValue(tt.args.newvalue, tt.args.b, tt.args.table, tt.args.keyname, tt.args.oldvalue)
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("\nWriteValue() ---------------------- : \n%v\n\nWant ------------------------------ : \n%v",string(got1), string(tt.want1))
-				//t.Errorf("\nWriteValue() ---------------------- : \n%v\n\nWant ------------------------------ : \n%v", got1, tt.want1)
+				t.Errorf("\nWriteValue() ---------------------- : \n%v\n\nWant ------------------------------ : \n%v", got1, tt.want1)
 			}
 			if got2 != tt.want2 {
 				t.Errorf("\nWriteValue() got2 = %v, want2 %v", got2, tt.want2)
@@ -828,6 +828,117 @@ type.name = """
   Ducks
 """`), 6,
 		}, // -----------------------------------------------------
+
+
+
+		//// Toml write too complex toml file
+		{"Toml : Write too complex toml file : ",
+			args{`'hogefuga'`, // Value to write
+				[]byte( // Input Bytes
+
+// --------------------------------------------------------
+`[[plugins]]
+repo = 'Shougo/dein.vim'
+
+#[[plugins]]
+#repo = 'ryanoasis/vim-devicons'
+# 
+#[[plugins]]
+#repo = 'scrooloose/nerdtree'
+#hook_add = '''
+#  " appeylance
+#  " vim-devicons
+#  let g:webdevicons_conceal_nerdtree_brackets = 1
+#  let g:WebDevIconsNerdTreeAfterGlyphPadding = ' '
+#  " dir-icons
+#  let g:WebDevIconsUnicodeDecorateFolderNodes = 1
+#  let g:DevIconsEnableFoldersOpenClose = 1
+#  let g:WebDevIconsUnicodeDecorateFolderNodesDefaultSymbol = ''
+#  let g:DevIconsDefaultFolderOpenSymbol = ''
+#  " file-icons
+#  let g:WebDevIconsUnicodeDecorateFileNodesExtensionSymbols = {}
+#  let g:WebDevIconsUnicodeDecorateFileNodesExtensionSymbols['html'] = ''
+#  let g:WebDevIconsUnicodeDecorateFileNodesExtensionSymbols['css'] = ''
+#  let g:WebDevIconsUnicodeDecorateFileNodesExtensionSymbols['md'] = ''
+#  let g:WebDevIconsUnicodeDecorateFileNodesExtensionSymbols['txt'] = ''
+#  " open nerdtree
+#  nnoremap <silent> <Space>d   :call NERDTreeCWD()<CR>
+#'''
+# let g:webdevicons_conceal_nerdtree_brackets = 
+# let g:webdevicons_conceal_nerdtree_brackets = 
+# let g:webdevicons_conceal_nerdtree_brackets = 
+# --- gonvim need it
+[[plugins]]
+repo = 'equalsraf/neovim-gui-shim'
+#hook_source = '''
+#  let g:deoplete#enable_at_startup = 1
+#  let g:deoplete#max_list = 30
+#'''
+# " nnoremap <Space>fb :GonvimFuzzyBLines<CR>
+# let g:webdevicons_conceal_nerdtree_brackets = 
+# let g:webdevicons_conceal_nerdtree_brackets = 
+# let g:webdevicons_conceal_nerdtree_brackets = 
+# let g:webdevicons_conceal_nerdtree_brackets = 
+hoge
+`),
+// --------------------------------------------------------
+
+				"[plugins]",   // Table
+				"repo", // Key
+				nil},      // Old value
+			[]byte( // Expected Bytes 
+
+
+// --------------------------------------------------------
+`[[plugins]]
+repo = 'Shougo/dein.vim'
+
+#[[plugins]]
+#repo = 'ryanoasis/vim-devicons'
+# 
+#[[plugins]]
+#repo = 'scrooloose/nerdtree'
+#hook_add = '''
+#  " appeylance
+#  " vim-devicons
+#  let g:webdevicons_conceal_nerdtree_brackets = 1
+#  let g:WebDevIconsNerdTreeAfterGlyphPadding = ' '
+#  " dir-icons
+#  let g:WebDevIconsUnicodeDecorateFolderNodes = 1
+#  let g:DevIconsEnableFoldersOpenClose = 1
+#  let g:WebDevIconsUnicodeDecorateFolderNodesDefaultSymbol = ''
+#  let g:DevIconsDefaultFolderOpenSymbol = ''
+#  " file-icons
+#  let g:WebDevIconsUnicodeDecorateFileNodesExtensionSymbols = {}
+#  let g:WebDevIconsUnicodeDecorateFileNodesExtensionSymbols['html'] = ''
+#  let g:WebDevIconsUnicodeDecorateFileNodesExtensionSymbols['css'] = ''
+#  let g:WebDevIconsUnicodeDecorateFileNodesExtensionSymbols['md'] = ''
+#  let g:WebDevIconsUnicodeDecorateFileNodesExtensionSymbols['txt'] = ''
+#  " open nerdtree
+#  nnoremap <silent> <Space>d   :call NERDTreeCWD()<CR>
+#'''
+# let g:webdevicons_conceal_nerdtree_brackets = 
+# let g:webdevicons_conceal_nerdtree_brackets = 
+# let g:webdevicons_conceal_nerdtree_brackets = 
+# --- gonvim need it
+[[plugins]]
+repo = 'hogefuga'
+[[plugins]]
+repo = 'equalsraf/neovim-gui-shim'
+#hook_source = '''
+#  let g:deoplete#enable_at_startup = 1
+#  let g:deoplete#max_list = 30
+#'''
+# " nnoremap <Space>fb :GonvimFuzzyBLines<CR>
+# let g:webdevicons_conceal_nerdtree_brackets = 
+# let g:webdevicons_conceal_nerdtree_brackets = 
+# let g:webdevicons_conceal_nerdtree_brackets = 
+# let g:webdevicons_conceal_nerdtree_brackets = 
+hoge
+`), 32,
+		}, // -----------------------------------------------------
+
+
 
 		// **** End
 	}

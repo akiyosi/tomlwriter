@@ -521,9 +521,9 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 					parsedvalue = multilinevalue
 				}
 			} else {
-			  if inMultilineLiteral {
-			  	multilinevalue += "\n"
-			  }
+				if inMultilineLiteral {
+					multilinevalue += "\n"
+				}
 			}
 		}
 

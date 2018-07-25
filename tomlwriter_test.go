@@ -414,6 +414,36 @@ str3 = """\
 
 		}, // -----------------------------------------------------
 
+		//// Toml Muliline string 2
+		{"Test Multiline string 2: ",
+			args{`"""` + "\n       fizz\\\n       buzz" + `"""`, // Value to write
+				[]byte( // Input Bytes
+
+`str1 = "The quick brown fox jumps over the lazy dog."
+
+str3 = """
+       The quick brown # this contained
+       fox jumps over 
+       the lazy dog.
+       """`),
+
+				nil,    // Table
+				"str1", // Key
+				"The quick brown fox jumps over the lazy dog."}, // Old value
+			[]byte( // Expected Bytes
+
+`str1 = """
+       fizz\
+       buzz"""
+
+str3 = """
+       The quick brown # this contained
+       fox jumps over 
+       the lazy dog.
+       """`), 1,
+
+		}, // -----------------------------------------------------
+
 		//// Toml Muliline literal
 		{"Test Muliline literal: ",
 			args{`'''` + "\n       fizz\\\n       buzz" + `'''`, // Value to write

@@ -262,9 +262,14 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 		// A hash symbol marks the rest of the line as a comment.
 		var vline, cline string
 		if strings.Contains(line, "#") {
-			s := strings.Index(line, "#")
-			vline = line[:s]
-			cline = line[s:]
+			if !inMultilineString && !inMultilineLiteral {
+				s := strings.Index(line, "#")
+				vline = line[:s]
+				cline = line[s:]
+			} else {
+				vline = line
+				cline = ""
+			}
 			if vline == "" && cline != "" {
 				writestring = cline
 				if i+1 < len(lines) {

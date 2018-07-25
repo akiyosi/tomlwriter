@@ -31,18 +31,26 @@ func countAndReplaceSpaceRight(str string) (int, string) {
 func stringToTomlType(s string) interface{} {
 	s = strings.Trim(s, " \t")
 
+	// Date-Time format ?
 	if dt, t := isTomlDateTime(s); dt == true {
 		return fmt.Sprintf("%v", t)
+		// Float format ?
 	} else if isTomlFloat(s) {
 		num, _ := strconv.ParseFloat(strings.Replace(s, "E", "e", 1), 32)
 		return fmt.Sprintf("%f", num)
+		// Interger format ?
 	} else if isTomlInt(s) {
 		num, _ := strconv.ParseInt(strings.Replace(s, "_", "", -1), 10, 32)
 		return fmt.Sprintf("%f", float64(num))
+		// Array format ?
 	} else if isTomlArray(s) {
 		return strings.Replace(strings.Replace(s, "\x20", "", -1), ",", "", -1)
 	}
+	// TODO v0.5.0: hexadecimal with prefix `0x` format
+	// TODO v0.5.0: octal with prefix `0o` format
+	// TODO v0.5.0: binary with prefix `0b` format
 
+	// String/Literal format ?
 	if len(s) > 1 {
 		if s[0] == '"' && s[len(s)-1] == '"' {
 			return s

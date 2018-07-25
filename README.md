@@ -2,6 +2,8 @@
 
 Tomlwriter will help it if you want to change specific values in the toml file while keeping comments, indentations, etc. 
 
+toml v0.4.0 compliant. (maybe...)
+
 ## Installation
 
 ```

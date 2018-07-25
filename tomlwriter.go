@@ -13,16 +13,16 @@ func replaceLinebreak(str, code string) string {
 	return strings.NewReplacer("\r\n", code, "\r", code, "\n", code).Replace(str)
 }
 
-func countAndReplaceSpaceRight(str string) (int, string) {
+func countAndReplaceNrRight(s string) (int, string) {
 	var count int
-	for z := 0; z < len(str); z++ {
-		if str[len(str)-z-1] == '\n' {
+	for z := 0; z < len(s); z++ {
+		if s[len(s)-z-1] == '\n' {
 			count++
 		} else {
 			break
 		}
 	}
-	newstr := strings.TrimRight(str, "\n")
+	newstr := strings.TrimRight(s, "\n")
 
 	return count, newstr
 }
@@ -265,6 +265,15 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 			s := strings.Index(line, "#")
 			vline = line[:s]
 			cline = line[s:]
+			if vline == "" && cline != "" {
+				writestring = cline
+				if i+1 < len(lines) {
+					writestring += "\n"
+				}
+				writebytes = append(writebytes, *(*[]byte)(unsafe.Pointer(&writestring))...)
+				writestring = ""
+				continue
+			}
 		} else {
 			vline = line
 			cline = ""
@@ -278,8 +287,8 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 				// key and new value write in the previous table as new entry
 				if writeLinenumber == 0 && doneWriteNewValue == false {
 					if (t != "" && o == "" && matchTable == true) || (t == "" && o == "" && isglobalkey == true) {
-						co, trimedRightString := countAndReplaceSpaceRight(string(writebytes))
-						writebytes = *(*[]byte)(unsafe.Pointer(&trimedRightString))
+						co, trimedRightString := countAndReplaceNrRight(string(writebytes))
+						writebytes = []byte(trimedRightString)
 						if matchArrayTable == true && matchKeyInArrayTable {
 							writestring += "\n[" + t + "]"
 						}
@@ -378,7 +387,7 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 		// }
 
 		// if !strings.Contains(line, "=")
-		if strings.Contains(line, "=") {
+		if strings.Contains(line, "=") && !inMultiline {
 			// key = strings.Replace(strings.Split(string(vline), "=")[0], "\x20", "", -1)
 			key = strings.TrimRight(strings.Split(string(vline), "=")[0], "\x20")
 			value = strings.Split(string(vline), "=")[1]
@@ -391,7 +400,7 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 
 		// Toml multi line string
 		if len(value) > 2 && strings.Contains(value, `"""`) {
-			switch inMultilineString {
+			switch inMultilineString && !inMultilineLiteral {
 			case true:
 				if value == `"""` {
 					value = ""
@@ -420,7 +429,7 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 		// Toml multi line literal
 		if len(value) > 2 && strings.Contains(value, `'''`) {
 			// Toml multi line string
-			switch inMultilineLiteral {
+			switch inMultilineLiteral && !inMultilineString {
 			case true:
 				if value == `'''` {
 					value = ""
@@ -447,12 +456,12 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 		}
 
 		// Toml multi line array
-		if strings.Contains(value, `[`) && !strings.Contains(value, `]`) && !inMultilineArray {
+		if strings.Contains(value, `[`) && !strings.Contains(value, `]`) && !inMultilineArray && !inMultilineLiteral && !inMultilineString {
 			countMultiline = 0
 			inMultiline = true
 			inMultilineArray = true
 		}
-		if !strings.Contains(value, `[`) && strings.Contains(value, `]`) && inMultilineArray {
+		if !strings.Contains(value, `[`) && strings.Contains(value, `]`) && inMultilineArray && !inMultilineLiteral && !inMultilineString {
 			inMultilineArray = false
 			isMultilineEnd = true
 		}
@@ -616,7 +625,6 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 			writebytes = append(writebytes, *(*[]byte)(unsafe.Pointer(&writestring))...)
 		}
 		writestring = ""
-
 	}
 
 	return writebytes, writeLinenumber

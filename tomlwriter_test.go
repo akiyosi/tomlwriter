@@ -812,8 +812,10 @@ type.name = "pug"
 
 [[birds]]
 type.name = "Sparrows"
+
 [[birds]]
 type.name = "fizz"
+
 [[birds]]
 type.name = "Songbirds"
 [[birds]]
@@ -847,11 +849,13 @@ type.name = """
   Songbirds
   Songbirds
 """
+
 [[birds]]
 type.name = """
   fizz
   fizz
 """
+
 [[birds]]
 type.name = """
   Ducks
@@ -951,8 +955,10 @@ repo = 'Shougo/dein.vim'
 # let g:webdevicons_conceal_nerdtree_brackets = 
 # let g:webdevicons_conceal_nerdtree_brackets = 
 # --- gonvim need it
+
 [[plugins]]
 repo = 'hogefuga'
+
 [[plugins]]
 repo = 'equalsraf/neovim-gui-shim'
 #hook_source = '''

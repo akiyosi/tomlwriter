@@ -295,12 +295,16 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 						co, trimedRightString := countAndReplaceNrRight(string(writebytes))
 						writebytes = []byte(trimedRightString)
 						if matchArrayTable == true && matchKeyInArrayTable {
-							writestring += "\n[" + t + "]"
+							writestring += "\n\n[" + t + "]"
 						}
 						writestring += "\n" + k + "\x20=\x20" + v
 						writeLinenumber = i + 1 - co + 1
 						for a := 0; a < co; a++ {
-							writestring += "\n"
+							if matchArrayTable == true && matchKeyInArrayTable {
+								writestring += "\n\n"
+							} else {
+								writestring += "\n"
+							}
 						}
 						doneWriteNewValue = true
 					}

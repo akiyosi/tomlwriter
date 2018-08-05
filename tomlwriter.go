@@ -291,10 +291,10 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 				// if old value is nil and writeLinenumber == 0, matchTable is true, then,
 				// key and new value write in the previous table as new entry
 				if writeLinenumber == 0 && doneWriteNewValue == false {
-					if (t != "" && o == "" && matchTable == true) || (t == "" && o == "" && isglobalkey == true) {
+					if (t != "" && o == "" && i == len(lines)-1) || (t != "" && o == "" && matchTable == true) || (t == "" && o == "" && isglobalkey == true) {
 						co, trimedRightString := countAndReplaceNrRight(string(writebytes))
 						writebytes = []byte(trimedRightString)
-						if matchArrayTable == true && matchKeyInArrayTable {
+						if (matchArrayTable == true && matchKeyInArrayTable) || (i == len(lines)-1 && matchTable == false) {
 							writestring += "\n\n[" + t + "]"
 						}
 						writestring += "\n" + k + "\x20=\x20" + v

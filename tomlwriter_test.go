@@ -863,6 +863,27 @@ type.name = """
 """`), 6,
 		}, // -----------------------------------------------------
 
+		//// Toml write new Key-MultilineValue in blank file
+		{"Toml : Write new Key-MultilineValue in blank file: ",
+			args{`"""` + "\n  fizz\n  fizz\n" + `"""`, // Value to write
+				[]byte( // Input Bytes
+
+``),
+
+				"[birds]",   // Table
+				"type.name", // Key
+				""},         // Old value
+			[]byte( // Expected Bytes
+
+`
+
+[[birds]]
+type.name = """
+  fizz
+  fizz
+"""`), 1,
+		}, // -----------------------------------------------------
+
 
 
 		//// Toml write too complex toml file

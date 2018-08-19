@@ -31,6 +31,15 @@ func countAndReplaceNrRight(s string) (int, string) {
 func stringToTomlType(s string) interface{} {
 	s = strings.Trim(s, " \t")
 
+	// String / Literal format and zero length ?
+	if len(s) == 2 {
+		if s[0] == '"' && s[len(s)-1] == '"' {
+			return `""`
+		} else if s[0] == '\'' && s[len(s)-1] == '\'' {
+			return `""`
+		}
+	}
+
 	if dt, t := isTomlDateTime(s); dt == true { // Date-Time format ?
 		return fmt.Sprintf("%v", t)
 	} else if isTomlFloat(s) { // Float format ?
@@ -199,8 +208,10 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 	if keyname == nil || keyname == "" {
 		return b, 0
 	}
+
+	doWriteNewValue := false
 	if oldvalue == nil {
-		oldvalue = ""
+		doWriteNewValue = true
 	}
 
 	v := fmt.Sprintf("%v", newvalue)
@@ -213,7 +224,7 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 		o = fmt.Sprintf("%v", oldvalue)
 	case string:
 		if oldvalue == "" {
-			o = ""
+			o = `""`
 		} else {
 			o = fmt.Sprintf(`"%v"`, oldvalue)
 		}
@@ -291,7 +302,7 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 				// if old value is nil and writeLinenumber == 0, matchTable is true, then,
 				// key and new value write in the previous table as new entry
 				if writeLinenumber == 0 && doneWriteNewValue == false {
-					if (t != "" && o == "" && i == len(lines)-1) || (t != "" && o == "" && matchTable == true) || (t == "" && o == "" && isglobalkey == true) {
+					if (t != "" && doWriteNewValue && i == len(lines)-1) || (t != "" && doWriteNewValue && matchTable == true) || (t == "" && doWriteNewValue && isglobalkey == true) {
 						co, trimedRightString := countAndReplaceNrRight(string(writebytes))
 						writebytes = []byte(trimedRightString)
 						if (matchArrayTable == true && matchKeyInArrayTable) || (i == len(lines)-1 && matchTable == false) {
@@ -557,16 +568,16 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 		}
 
 		// writestring += "\n" + " ::: DEBUG ::::::::::::::::::: start ::::::::::::::::::::"
-		// writestring += "\n" + " ::: DEBUG ::: o : " + fmt.Sprintf("%v", o)
+		// writestring += "\n" + " ::: DEBUG ::: o : |" + fmt.Sprintf("%v", o) + "|"
 		// writestring += "\n" + " ::: DEBUG ::: parsedvalue : |" + fmt.Sprintf("%v", parsedvalue) + "|"
-		// writestring += "\n" + " ::: DEBUG ::: stringTo o : " + fmt.Sprintf("%v", stringToTomlType(o))
+		// writestring += "\n" + " ::: DEBUG ::: stringTo o : |" + fmt.Sprintf("%v", stringToTomlType(o)) + "|"
 		// writestring += "\n" + " ::: DEBUG ::: stringTo parsedvalue : |" + fmt.Sprintf("%v", stringToTomlType(parsedvalue)) + "|"
 		// writestring += "\n" + " ::: DEBUG :::::::::::::::::::: end :::::::::::::::::::::"
 
 		// Write modified toml data
 		if isMultilineEnd {
 			//switch strings.Trim(k, `"`) == strings.Trim(key, ` "`) && o == parsedvalue && o != "" {
-			switch strings.Trim(k, `"`) == strings.Trim(key, ` "`) && compareTomlValue(o, parsedvalue) && o != "" {
+			switch strings.Trim(k, `"`) == strings.Trim(key, ` "`) && compareTomlValue(o, parsedvalue) {
 			case true:
 				if isglobalkey == true && t == "" {
 					//fmt.Print(key, "\x20=\x20", v, "\x20", cline, "\n")

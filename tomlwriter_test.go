@@ -715,7 +715,7 @@ type.name = "pug"`),
 
 				"",       // Table
 				"newKey", // Key
-				""},      // Old value
+				nil},      // Old value
 			[]byte( // Expected Bytes
 
 `key = value
@@ -742,7 +742,7 @@ type.name = "pug"`),
 
 				"",       // Table
 				"newKey", // Key
-				""},      // Old value
+				nil},      // Old value
 			[]byte( // Expected Bytes
 
 `key = value
@@ -771,7 +771,7 @@ type.name = "Sparrows"
 
 				"bird",   // Table
 				"newKey", // Key
-				""},      // Old value
+				nil},      // Old value
 			[]byte( // Expected Bytes
 
 `name = { first = "Tom", last = "Preston-Werner" }
@@ -803,7 +803,7 @@ type.name = "Ducks"
 
 				"[birds]",   // Table
 				"type.name", // Key
-				""},         // Old value
+				nil},         // Old value
 			[]byte( // Expected Bytes
 
 `name = { first = "Tom", last = "Preston-Werner" }
@@ -841,7 +841,7 @@ type.name = """
 
 				"[birds]",   // Table
 				"type.name", // Key
-				""},         // Old value
+				nil},         // Old value
 			[]byte( // Expected Bytes
 
 `[[birds]]
@@ -863,6 +863,24 @@ type.name = """
 """`), 6,
 		}, // -----------------------------------------------------
 
+		//// Toml write new value in 0 length value of Table
+		{"Toml write new value in 0 length value of Table: ",
+			args{`'` + "fizz" + `'`, // Value to write
+				[]byte( // Input Bytes
+
+`[tablename]
+keyname = ''
+`),
+
+				"tablename",   // Table
+				"keyname", // Key
+				""},         // Old value
+			[]byte( // Expected Bytes
+
+`[tablename]
+keyname = 'fizz'
+`), 2,
+		}, // -----------------------------------------------------
 		//// Toml write new Key-MultilineValue in blank file
 		{"Toml : Write new Key-MultilineValue in blank file: ",
 			args{`"""` + "\n  fizz\n  fizz\n" + `"""`, // Value to write
@@ -872,7 +890,7 @@ type.name = """
 
 				"[birds]",   // Table
 				"type.name", // Key
-				""},         // Old value
+				nil},         // Old value
 			[]byte( // Expected Bytes
 
 `
@@ -881,7 +899,7 @@ type.name = """
 type.name = """
   fizz
   fizz
-"""`), 1,
+"""`), 2,
 		}, // -----------------------------------------------------
 
 

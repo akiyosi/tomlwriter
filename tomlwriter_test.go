@@ -3,7 +3,7 @@ package tomlwriter
 import (
 	"reflect"
 	"testing"
-    "time"
+	"time"
 )
 
 type args struct {

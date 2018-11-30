@@ -346,7 +346,7 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 					}
 
 					// switch strings.Trim(k, `"`) == strings.Trim(key, ` "`) && o == strings.Trim(value, "\x20") {
-					switch strings.Trim(k, `"`) == strings.Trim(key, ` "`) && compareTomlValue(o, strings.Trim(value, "\x20")) {
+					switch strings.Trim(k, `"`) == strings.Trim(strings.TrimSpace(key), `"`) && compareTomlValue(o, strings.Trim(value, "\x20")) {
 					case true:
 						isInlineTableMatch = true
 						inlinestring += key + "=\x20" + v
@@ -577,7 +577,7 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 		// Write modified toml data
 		if isMultilineEnd {
 			//switch strings.Trim(k, `"`) == strings.Trim(key, ` "`) && o == parsedvalue && o != "" {
-			switch strings.Trim(k, `"`) == strings.Trim(key, ` "`) && compareTomlValue(o, parsedvalue) {
+			switch strings.Trim(k, `"`) == strings.Trim(strings.TrimSpace(key), `"`) && compareTomlValue(o, parsedvalue) {
 			case true:
 				if isglobalkey == true && t == "" {
 					//fmt.Print(key, "\x20=\x20", v, "\x20", cline, "\n")
@@ -610,7 +610,7 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 		} else if !inMultiline {
 
 			//switch strings.Trim(k, `"`) == strings.Trim(key, ` "`) && o == value && o != "" {
-			switch strings.Trim(k, `"`) == strings.Trim(key, ` "`) && compareTomlValue(o, parsedvalue) && o != "" {
+			switch strings.Trim(k, `"`) == strings.Trim(strings.TrimSpace(key), `"`) && compareTomlValue(o, parsedvalue) && o != "" {
 			case true:
 				if isglobalkey == true && t == "" {
 					// fmt.Print(key, "\x20=\x20", v, "\x20", cline, "\n")

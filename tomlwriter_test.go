@@ -1013,6 +1013,22 @@ hoge
 `), 32,
 		}, // -----------------------------------------------------
 
+		//// Toml write value in a key which starting space char string
+		{"Toml : Write value in a key which starting space char string: ",
+			args{`"nyaa"`, // Value to write
+				[]byte( // Input Bytes
+
+`[hoge]
+  	targetkey = ""`),
+
+				"hoge",   // Table
+				"targetkey", // Key
+				""},         // Old value
+			[]byte( // Expected Bytes
+
+`[hoge]
+  	targetkey = "nyaa"`), 2,
+		}, // -----------------------------------------------------
 
 
 		// **** End

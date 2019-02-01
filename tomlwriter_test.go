@@ -1030,6 +1030,45 @@ hoge
   	targetkey = "nyaa"`), 2,
 		}, // -----------------------------------------------------
 
+		//// Toml write key-value in file
+		{"Toml : Write table-key-value in file: ",
+			args{`"nyaa"`, // Value to write
+				[]byte( // Input Bytes
+
+`[hoge]
+  	targetkey = "wann"`),
+
+				"hoge",   // Table
+				"targetkey", // Key
+				nil},         // Old value
+			[]byte( // Expected Bytes
+
+`[hoge]
+targetkey = "nyaa"
+  	targetkey = "wann"`), 2,
+		}, // -----------------------------------------------------
+
+		//// Toml write table-key-value in file
+		{"Toml : Write table-key-value in file: ",
+			args{`"nyaa"`, // Value to write
+				[]byte( // Input Bytes
+
+`[[hoge]]
+  	targetkey = "wann"`),
+
+				"[hoge]",   // Table
+				"targetkey", // Key
+				nil},         // Old value
+			[]byte( // Expected Bytes
+
+`[[hoge]]
+targetkey = "nyaa"
+
+[[hoge]]
+  	targetkey = "wann"`), 2,
+		}, // -----------------------------------------------------
+
+
 
 		// **** End
 	}

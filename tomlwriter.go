@@ -305,11 +305,20 @@ func WriteValue(newvalue interface{}, b []byte, table interface{}, keyname inter
 					if (t != "" && doWriteNewValue && i == len(lines)-1) || (t != "" && doWriteNewValue && matchTable == true) || (t == "" && doWriteNewValue && isglobalkey == true) {
 						co, trimedRightString := countAndReplaceNrRight(string(writebytes))
 						writebytes = []byte(trimedRightString)
+						doneWriteArrayTable := false
 						if (matchArrayTable == true && matchKeyInArrayTable) || (i == len(lines)-1 && matchTable == false) {
 							writestring += "\n\n[" + t + "]"
+							doneWriteArrayTable = true
 						}
+
 						writestring += "\n" + k + "\x20=\x20" + v
 						writeLinenumber = i + 1 - co + 1
+
+						isWriteArrayTable := strings.Contains(t, "[") && strings.Contains(t, "]")
+						if isWriteArrayTable && !doneWriteArrayTable {
+							writestring += "\n\n[" + t + "]"
+						}
+
 						for a := 0; a < co; a++ {
 							if matchArrayTable == true && matchKeyInArrayTable {
 								writestring += "\n\n"
